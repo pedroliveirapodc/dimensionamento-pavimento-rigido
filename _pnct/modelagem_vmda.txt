@@ -1,0 +1,639 @@
+
+===== PAG 1 =====
+Documento confidencial para uso e informação do Departamento Nacional de Infraestrutura de Transportes
+Saul Germano Rabello Quadros
+Marcus Vinicius Oliveira Camara
+20 de junho de 2017
+Brasília
+Modelagem VMDA
+Estimativa de VMDA
+Rede Rodoviária Federal Pavimentada
+===== PAG 2 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 3 =====
+Estimativa de VMDA em toda a Rede Rodoviária Nacional...
+3
+ + 6.500 segmentos SNV
+ + 64.000 km de rodovias pavimentadas
+Rede Rodoviária do Brasil
+Resultados no âmbito do planejamento estratégico
+===== PAG 4 =====
+Estimativa de VMDA em toda a Rede Rodoviária Nacional...
+4
+Como estimar VMDA em toda 
+Rede Rodoviária Federal?
+ + 6.500 segmentos SNV
+ + 64.000 km de rodovias pavimentadas
+Rede Rodoviária do Brasil
+Resultados no âmbito do planejamento estratégico
+===== PAG 5 =====
+Locais com volumetria conhecida
+VMDA     +     VHP     +     FHP
++     Volume médio por categoria
++     Qualidade estatística dos dados
+Metodologia
+Alocação de Fluxo em Rede     +     Estimativas 
+de Matriz O/D     +     Especialistas em 
+Transportes     +     Avaliação/Ajustes 
+Rede/Parâmetros/Resultados
+Metodologia para estimativa de VMDA...
+O que é preciso? Quais são os elementos básicos?
+5
+Matriz Origem e Destino
+Modelo de Zoneamento (Centroides)     
++     Diversidade de dados de viagem
++     Viagens Categorizadas (Leves, Pesados)
+Rede Rodoviária Vetorizada
+Tipo de pista     +     Relevo     +     Capacidade
++     Condições de Pavimento     +     Centroides
++     Velocidade Média     +     Custos
+===== PAG 6 =====
+Locais com volumetria conhecida
+VMDA     +     VHP     +     FHP
++     Volume médio por categoria
++     Qualidade estatística dos dados
+Metodologia
+Alocação de Fluxo em Rede     +     Estimativas 
+de Matriz O/D     +     Especialistas em 
+Transportes     +     Avaliação/Ajustes 
+Rede/Parâmetros/Resultados
+Metodologia para estimativa de VMDA...
+O que é preciso? Quais são os elementos básicos?
+6
+Matriz Origem e Destino
+Modelo de Zoneamento (Centroides)     
++     Diversidade de dados de viagem
++     Viagens Categorizadas (Leves, Pesados)
+Rede Rodoviária Vetorizada
+Tipo de pista     +     Relevo     +     Capacidade
++     Condições de Pavimento     +     Centroides
++     Velocidade Média     +     Custos
+Estimativa de 
+Volume Médio Diário Anual
+(VMDA)
+===== PAG 7 =====
+Diferenças entre a Rede de Rodovias Federais e Rede de Modelagem...
+Importância de uma rede vetorizada conectada e com capilaridade...
+7
+Rodovias Federais
+ Rede Rodoviária Modelagem
+ + 24.000 Links
+ + 5.570 Centroides Conectados (+ Exterior)
+ Menor Capilaridade
+ Não atende a todos os Centroides
+===== PAG 8 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 9 =====
+Pré-Modelagem 2015...
+Aspectos Gerais e Considerações
+9
+ Rede Rodoviária Atualizada com Base no SNV 2015/3
+ Pontos com Contagem de Tráfego (Count Locations)
+ Contadores Permanentes do PNCT (VMDA 2015)
+ Postos de Pesquisa de Tráfego de 2011 (Projeção de Tráfego para 2015)
+ 5100 Trechos Federais com Estimativa de Volume por NS
+ Matriz O/D (Semente) da Pesquisa Nacional de Tráfego de 2011
+ Software de Planejamento de Transportes - TransCAD
+ Alocação de Tráfego e Estimativa de Matrix O/D Single Class
+Aspectos Gerais e Considerações
+293
+
+===== PAG 10 =====
+Pré-Modelagem VMDA 2015, 
+Distribuição dos locais com contagem...
+10
+Segmentos com Contagem (Count Locations)
+ VMDA nos Count Locations
+Contagem Permanente (PNCT) + Postos da PNT 2011 (Projeção de Tráfego)
+===== PAG 11 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 12 =====
+Pré-Modelagem 2015 x Modelagem 2016,
+Comparações Gerais...
+12
+ Base no SNV 2015/3
+ Tempos de Viagem
+ Pontos com Contagem de Tráfego
+ PNCT (VMDA 2015)
+ PNT (2011  Proj. 2015)
+ Matriz O/D (Semente)
+ PNT 2011
+ Single Class (VMDA Total)
+ Base no SNV 2016/9 + SNV 2017/3
+ Custo Generalizado
+ Pontos com Contagem de Tráfego
+ PNCT (VMDA 2016)
+ PNCT (VMDA 2015  Proj. 2016)
+ PNT 2016
+ Postos de Cobertura (2016)
+ PNT (2011  Proj. 2016)
+ Matriz O/D (Semente)
+ 1ª e 2ª PNT 2016
+ Multi Class (Leves e Pesados) 
+Pré-Modelagem VMDA 2015
+ Modelagem VMDA 2016
+New!
+New!
+New!
+New!
+↓
+↓
+New!
+293
+376
+New!
+
+===== PAG 13 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 14 =====
+Rede Rodoviária para Modelagem,
+Quebra de SNV’s, Centroides e Conectores...
+14
+Quebra SNV
+Centroide
+Centroide
+Conector
+Quebra SNV
+Rodovia Estadual
+===== PAG 15 =====
+Rede Rodoviária para Modelagem,
+Quebra de SNV’s, Centroides e Conectores...
+15
+Quebra SNV
+Centroide
+Centroide
+Conector
+Quebra SNV
+Rodovia EstadualMesmo SNV,
+Mesmo VMDA...
+
+===== PAG 16 =====
+Custo Generalizado,
+HDM-4...
+16
+• Dados de entrada por região geográfica do IBGE
+• Tipos de Pista, condições de pavimento (definido pelo IRI) e tipo de relevo (IGV e IGH)
+• Veículos representativos (Moto, Automóvel, Utilitário, Ônibus e Caminhão 2, 3, 5, 7 e 9 eixos
+
+===== PAG 17 =====
+Custo Generalizado,
+Mapeamento de Pedágios...
+17
+Visão Geral
+Minas Gerais - MG
+São Paulo - SP
+ + 300 Praças de Pedágio consideradas
+ Tarifas atualizadas até dez/2016
+===== PAG 18 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 19 =====
+Count Locations,
+Prioridades e utilização dos dados...
+19
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+1
+2
+3
+4
+5
+===== PAG 20 =====
+Count Locations,
+Prioridades e utilização dos dados...
+20
+ Passaram por processo de Imputação de Dados;
+ Considerados equipamentos com + 200 dias válidos em
+ambos os sentidos;
+ Informações mais relevantes:
+ Dias válidos após imputação
+ VMDA por categoria e por sentido
+ VMDS para semanas específicas do ano (cálculo
+de Fator de Sazonalidade)
+ Volumes horários
+ FHP
+ Fator K (n-ésima hora)
+ % Veículos Pesados (Cálculo de NS)
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+===== PAG 21 =====
+Count Locations,
+Prioridades e utilização dos dados...
+21
+ Considerados locais com dados válidos (+ 200 dias) em
+2015 e não válidos para 2016;
+ Projeção de VMDA 2015  2016
+ PNCT’s Válidos em 2015 e 2016
+ Projeção de crescimento médio por Região
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+===== PAG 22 =====
+Count Locations,
+Prioridades e utilização dos dados...
+22
+ Resultados da 1ª e 2ª Pesquisa Nacional de Tráfegode 2016
+ Fator de Sazonalidade para as semanas das pesquisas
+(Dividido por regiões do Brasil)
+02 a 08 de jul/17
+19 a 25 nov/17
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+===== PAG 23 =====
+Count Locations,
+Prioridades e utilização dos dados...
+23
+ Fator de Sazonalidade para as semanas correspondentes
+das coleta de dados dos Postos de Cobertura
+ Dados de PNCT’s 2016 com + 200 dias válidos e VMDS
+correspondente com 7 dias válidos
+ Fator de Sazonalidade médio por regiões do Brasil
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+
+===== PAG 24 =====
+Count Locations,
+Prioridades e utilização dos dados...
+24
+ Utilização dos Dados de CVC da Pesquisa Nacional
+de Tráfego de 2011
+ Projeção média de Tráfego com base em dados do 
+PNCT e da PNT 2016
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+::: Extras :::
+===== PAG 25 =====
+Count Locations,
+Prioridades e utilização dos dados...
+25
+ Utilização de Trechos Federais Pavimentados como Count Locations
+ Principais Motivações:
+ Quantidade de Count Locations Insuficiente
+ Matriz Semente Incompleta
+ Hipótese do Nível de Serviço (VHP 50ª HP)
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+Trechos Federais (NS)
+Hipótese do Nível de Serviço (NS)
+Indicativo de Nível 
+de Serviço % % acum. % % acum.
+A ou B 91,6% 91,6% 93,5% 93,5%
+C 4,2% 95,8% 3,9% 97,3%
+D 4,2% 100,0% 2,7% 100,0%
+Ano 2015 Ano 2016
+Indicativo de Nível de 
+Serviço
+Dados PNCT
+===== PAG 26 =====
+Count Locations,
+Prioridades e utilização dos dados...
+26
+ Utilização de Trechos Federais Pavimentados como Count Locations
+ Principais Motivações:
+ Quantidade de Count Locations Insuficiente
+ Matriz Semente Incompleta
+ Hipótese do Nível de Serviço (VHP 50ª HP)
+376 Count Locations
+PNCT 2016 (168)
+PNCT 2015 (26)
+PNT 2016 (95)
+Postos de Cobertura (34)
+PNT 2011 (53)
+Trechos Federais (NS)
+Hipótese do Nível de Serviço (NS)
+Hipótese Revalidada com Dados do PNCT 2016 !
+Indicativo de Nível 
+de Serviço % % acum. % % acum.
+A ou B 91,6% 91,6% 93,5% 93,5%
+C 4,2% 95,8% 3,9% 97,3%
+D 4,2% 100,0% 2,7% 100,0%
+Ano 2015 Ano 2016
+Indicativo de Nível de 
+Serviço
+Dados PNCT
+===== PAG 27 =====
+Distribuição Count Locations
+VMDA 2016
+27
+Visão Geral
+Região Sudeste
+Região Sul
+===== PAG 28 =====
+Distribuição Count Locations
+VMDA 2016
+28
+Visão Geral
+Região Nordeste
+GO e DF
+
+===== PAG 29 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 30 =====
+ Fator de Expansão
+ Matriz Semente Leves
+ Matriz Semente Pesados
+Matriz Semente – Leves e Pesados,
+1ª e 2ª Pesquisa Nacional de Tráfego de 2016
+30
+ Resultados da Pesquisa CVC
+ Resultados da Pesquisa OD
+Aspectos Gerais e Considerações
+
+===== PAG 31 =====
+Matriz Semente – Leves e Pesados,
+1ª e 2ª Pesquisa Nacional de Tráfego de 2016
+31
+Tratamento de Base de Dados O/D
+===== PAG 32 =====
+Matriz Semente – Leves e Pesados,
+1ª e 2ª Pesquisa Nacional de Tráfego de 2016
+32
+
+===== PAG 33 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 34 =====
+Teste Estatístico para avaliação dos resultados,
+GEH
+34
+O teste GEH, proposto por Geoffrey E. Havers, permite comparar dados de tráfego de dois
+conjuntos: estimados e contados. É uma variação do teste Chi-Quadrado que incorpora tanto o
+erro absoluto como o erro relativo.
+ M representa o fluxo alocado ou modelado
+ C representa o fluxo contado
+𝑮𝑬𝑯 = 𝟐(𝑴 − 𝑪)𝟐
+𝑴 + 𝑪
+Formulação Empírica com validação em experimentos relacionados com:
+• Engenharia de Tráfego
+• Previsão de Demanda
+• Modelagem de Transportes
+Relação entre Valores estimados e Valores Reais
+===== PAG 35 =====
+Teste Estatístico para avaliação dos resultados,
+GEH
+35
+Resultados do Teste GEH
+FAIXA CLASSIFICAÇÃO % FAIXA % ACUMULADO
+GEH < 5 A 60% 60%
+5 ≤ GEH < 10 B 35% 95%
+10 ≤ GEH < 12 C 5% 100%
+GEH ≥ 12 D 0% 0%
+Resultado ideal: 100% Faixa A
+Espera-se que no total de pontos referenciais adotados em uma rede viária, as diferenças entre os
+fluxos alocados (M) e os contados (C) estejam dentro da seguinte proporção:
+===== PAG 36 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 37 =====
+Experimentos Computacionais utilizando o TransCAD
+37
+Alocação de Tráfego e Estimativa de Matriz O/D
+Modelos de Alocação
+• User Equilibrium
+• Utilização de Custo Generalizado na Rede
+Custos (Operação + Tempo + Pedágio)
+• Estimativa de Matriz O/D  Menor erro associado
+(Volume Alocado e Contado)
+• 22 Instâncias/Testes Realizados
+Exp. Computacioais Instâncias Horas
+Pré-Modelagem 2015 15 361,3
+Modelagem 2016 24 1381,8
+Parâmetros Gerais do Modelo
+• VMDA Multi Class (Count Locations) – Leves e Pesados
+• Pesos para Count Locations (prioridade para 376 locais 
+reais, menor prioridade Estimados por NS)
+• Iterações Matriz O/D
+• Iterações Alocação
+• Erros Relativos Baixos (𝟏𝟎−𝟔)
+===== PAG 38 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 39 =====
+Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum.
+A GEH < 5 360 95,7% 95,7% A GEH < 5 366 97,3% 97,3% A GEH < 5 360 95,7% 95,7%
+B 5 ≤ GEH < 10 8 2,1% 97,9% B 5 ≤ GEH < 10 3 0,8% 98,1% B 5 ≤ GEH < 10 9 2,4% 98,1%
+C 10 ≤ GEH < 12 0 0,0% 97,9% C 10 ≤ GEH < 12 1 0,3% 98,4% C 10 ≤ GEH < 12 1 0,3% 98,4%
+D GEH ≥ 12 8 2,1% 100,0% D GEH ≥ 12 6 1,6% 100,0% D GEH ≥ 12 6 1,6% 100,0%
+376 100% 100% 376 100% 100% 376 100% 100%
+Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum.
+A GEH < 5 3928 90,2% 90,2% A GEH < 5 3803 87,3% 87,3% A GEH < 5 4171 95,8% 95,8%
+B 5 ≤ GEH < 10 248 5,7% 95,9% B 5 ≤ GEH < 10 322 7,4% 94,7% B 5 ≤ GEH < 10 93 2,1% 97,9%
+C 10 ≤ GEH < 12 54 1,2% 97,2% C 10 ≤ GEH < 12 51 1,2% 95,9% C 10 ≤ GEH < 12 24 0,6% 98,5%
+D GEH ≥ 12 124 2,8% 100,0% D GEH ≥ 12 178 4,1% 100,0% D GEH ≥ 12 66 1,5% 100,0%
+4354 100% 100% 4354 100% 100% 4354 100% 100%
+Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum. Tipo Avaliação Qtde % % acum.
+A GEH < 5 4288 90,7% 90,7% A GEH < 5 4169 88,1% 88,1% A GEH < 5 4531 95,8% 95,8%
+B 5 ≤ GEH < 10 256 5,4% 96,1% B 5 ≤ GEH < 10 325 6,9% 95,0% B 5 ≤ GEH < 10 102 2,2% 97,9%
+C 10 ≤ GEH < 12 54 1,1% 97,2% C 10 ≤ GEH < 12 52 1,1% 96,1% C 10 ≤ GEH < 12 25 0,5% 98,5%
+D GEH ≥ 12 132 2,8% 100,0% D GEH ≥ 12 184 3,9% 100,0% D GEH ≥ 12 72 1,5% 100,0%
+4730 100% 100% 4730 100% 100% 4730 100% 100%TotalTotalTotal
+Count Locations + FederaisCount Locations + Federais Count Locations + Federais
+Total Total Total
+Total Total Total
+Count LocationsCount Locations Count Locations
+FederaisFederais Federais
+Experimentos Computacionais utilizando o TransCAD,
+melhor resultados após experimentos e ajustes...
+39
+Resumo dos Resultados
+Leves
+ Pesados
+ VMDA Total
+===== PAG 40 =====
+Experimentos Computacionais utilizando o TransCAD,
+melhor resultados após experimentos e ajustes...
+40
+
+===== PAG 41 =====
+Resultados da Alocação...
+43
+VMDA Total - Região Sul
+ VMDA Total - Região Sudeste
+===== PAG 42 =====
+Resultados da Alocação...
+44
+VMDA Total - Região Nordeste
+ VMDA Total - Região Centro - Oeste
+===== PAG 43 =====
+AGENDA
+ CONCEITOS E METODOLOGIA
+ PRÉ-MODELAGEM 2015
+ MODELAGEM 2016
+— ASPECTOS GERAIS
+— REDE RODOVIÁRIA
+— COUNT LOCATIONS
+— MATRIZ O/D SEMENTE
+— TESTE ESTATÍSTICO PARA AVALIAÇÃO DOS RESULTADOS
+— EXPERIMENTOS COMPUTACIONAIS
+— RESULTADOS
+ CONSIDERAÇÕES FINAIS
+===== PAG 44 =====
+Considerações Finais,
+Conclusões, recomendações e perspectivas futuras...
+46
+• O modelo de estimativas de VMDA em sistemas esquemáticos de redes (Grafos) sofre avanços em relação
+os resultados do pré-carregamento promovido em 2015 (Pré-Modelagem)
+• Um dos principais avanços ocorreu na reconfiguração de conectividades da rede vetorizada, com base nos
+resultados da Pré-Modelagem e das Pesquisas de Origens e Destinos
+• Outros avanços ocorreram pela aplicação de custos operacionais aos segmentos rodoviários da rede
+vetorizada e a ampliação do número de pontos referenciais
+• Foram utilizadas dois grupos de classes veiculares (leves / passageiros e pesados / cargas) o que dá maior
+grau de precisão nas distribuições das classes de veículos que compõem esses dois grupos
+===== PAG 45 =====
+Considerações Finais,
+Conclusões, recomendações e perspectivas futuras...
+47
+• A ampliação de pontos de contagens de tráfego (referenciais reais) é fundamental para a fase final de
+ajuste do modelo de estimativa de VMDA em rede
+• As contagens de tráfego das concessões rodoviárias federais permitirão uma significativa melhoria das
+estimativas na rede rodoviária federal
+• Se forem obtidas informações de contagens de tráfego, pelo menos, dos Programas de Concessões
+Rodoviárias dos Estados de SP ,PR e RS ampliará ainda mais a qualidade das estimativas de VMDA, com
+reduções significativas dos erros médios quadráticos
+• As pesquisas O/D previstas para execução pelo EB ainda em 2017 (183 pontos) completarão as
+informações da Matriz de Origens e Destinos
+• Em junho de 2018 espera-se apresentar ao DNIT o Modelo finalizado, testado e homologado.
+===== PAG 46 =====
+Considerações Finais,
+Conclusões, recomendações e perspectivas futuras...
+48
+• Melhoria do modelo de hipsometria para uma melhor segmentação do SNV na identificação de relevos
+• Identificação dos segmentos rodoviários como: “urbanos”, “semiurbanos” e “rurais”
+• Melhorar a conectividade em regiões “urbanas” e “semiurbanas”
+• Ampliar o número e a quantidade de horas de calibrações, assumindo erros menores na matriz O/D
+===== PAG 47 =====
+Documento confidencial para uso e informação do Departamento Nacional de Infraestrutura de Transportes
+Saul Germano Rabello Quadros
+Marcus Vinicius Oliveira Camara
+20 de junho de 2017
+Brasília
+Modelagem VMDA
+Estimativa de VMDA
+Rede Rodoviária Federal Pavimentada

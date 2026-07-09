@@ -1,0 +1,30 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Logs e temporários do Streamlit ---
+_st_out.log
+_st_err.log
+
+# --- Artefatos de teste / dev ---
+_teste_font.pdf
+*.tmp
+
+# --- Material com direitos autorais (manual DNIT IPR-714) ---
+# Extração de texto e renders de alta resolução dos ábacos do manual.
+# São material de trabalho (digitalização), NÃO são runtime — o app usa os
+# valores já transcritos em estagio3.py / tabelas_pca.py. Mantê-los fora do
+# repositório público evita redistribuir conteúdo protegido do manual.
+_manual_linear.txt
+*_hi.png
+_fig*.png
+
+# --- IDE / SO ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

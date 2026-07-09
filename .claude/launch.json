@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nicegui",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app_nicegui.py"],
+      "port": 8503
+    },
+    {
+      "name": "streamlit",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "streamlit", "run", "app.py", "--server.headless", "true"],
+      "port": 8501
+    }
+  ]
+}
