@@ -6,9 +6,21 @@ __pycache__/
 venv/
 env/
 
-# --- Logs e temporários do Streamlit ---
+# --- SEGREDOS / API Keys (NUNCA versionar) ---
+# Chaves de API, senhas e credenciais ficam SÓ no seu computador.
+# Use um .env local (ignorado) e um .env.example (sem valores) no repositório.
+.env
+.env.*
+!.env.example
+*.key
+secrets.toml
+.streamlit/secrets.toml
+
+# --- Logs e temporários ---
 _st_out.log
 _st_err.log
+_ng_out.log
+_proto_out.log
 
 # --- Artefatos de teste / dev ---
 _teste_font.pdf
