@@ -30,7 +30,10 @@ import math
 # Faixa de espessuras testadas na iteracao (cm)
 H_MIN_CM = 10.0
 H_MAX_CM = 40.0
-H_PASSO_CM = 0.5
+# ENXUGAMENTO (23/08/2026, pedido da orientadora): espessura em numero INTEIRO
+# de cm (era passo 0,5). Historico do passo fino preservado no git (commit
+# "Corrige modelo de erosao..." e anteriores) caso precise retomar.
+H_PASSO_CM = 1.0
 
 # Limite de consumo para aprovacao (%)
 CONSUMO_MAXIMO = 100.0
@@ -38,13 +41,42 @@ CONSUMO_MAXIMO = 100.0
 # "Infinito" pratico para repeticoes admissiveis ilimitadas (fadiga, SR baixo)
 N_ILIMITADO = 1e20
 
-# Fatores de Seguranca de Carga (FSC) sugeridos pela PCA conforme a via.
-# O usuario pode sobrescrever; estes sao apenas defaults editaveis.
+# fctk FIXO (23/08/2026, pedido da orientadora): o app deixa de expor fctk como
+# campo editavel -- usa sempre o valor do proprio exemplo do manual (pag.115).
+# Historico: antes era ui.number editavel (3,0-6,0 MPa) em telas_ng.render_concreto.
+FCTK_PADRAO_MPA = 4.8
+
+# Fatores de Seguranca de Carga (FSC), Quadro 9 do IPR-714 (pag.95). O manual
+# define por TIPO de via (qualitativo, nao ha limiar numerico oficial de N):
+#   1,0 -> trafego com pequena % de caminhoes (estacionamentos)
+#   1,1 -> estradas/vias com moderada frequencia de caminhoes
+#   1,2 -> altos volumes de caminhoes
+#   ate 1,5 -> pavimentos que necessitem desempenho acima do normal (nao e
+#              so volume -- depende da importancia da via; fica de fora do
+#              automatico, so acessivel via ParametrosProjeto.fsc manual)
 FSC_PADRAO = {
     "via_alto_volume_interestadual": 1.20,
     "via_arterial_alto_volume": 1.10,
     "via_secundaria_baixo_volume": 1.00,
 }
+# Limiares de N total p/ escolher o FSC automaticamente -- mesma ordem de
+# grandeza usada em recomenda_subbase.nivel_trafego() (leve/medio/pesado),
+# reaproveitada aqui para consistencia entre os dois modulos.
+_FSC_LIMIAR_MEDIO = 5e5
+_FSC_LIMIAR_ALTO = 5e6
+
+
+def fsc_automatico(n_total_previsto: float) -> float:
+    """
+    FSC automatico (Quadro 9, IPR-714) a partir do volume total de trafego
+    previsto (soma das repeticoes do espectro). ENXUGAMENTO (23/08/2026,
+    pedido da orientadora): substitui o campo editavel de FSC na interface.
+    """
+    if n_total_previsto < _FSC_LIMIAR_MEDIO:
+        return 1.0
+    if n_total_previsto < _FSC_LIMIAR_ALTO:
+        return 1.1
+    return 1.2
 
 
 class TipoEixo(Enum):

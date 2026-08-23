@@ -789,9 +789,6 @@ def render_triagem_resumo(s: dict, refresh) -> bool:
                            else "manual")} for k in _CRIT_ORDEM]
         ui.table(columns=[{"name": k, "label": k, "field": k} for k in rows[0]],
                  rows=rows, row_key="Critério").classes("w-full").props("flat dense")
-        if pct < 70:
-            ui.label("💰 Na tela de Resultado o app compara o custo de ciclo de vida "
-                     "(LCCA) rígido × flexível para apoiar essa decisão.").classes("text-xs text-slate-500")
     return True
 
 
@@ -799,10 +796,16 @@ def render_triagem_resumo(s: dict, refresh) -> bool:
 # ETAPA - Concreto
 # ---------------------------------------------------------------
 def render_concreto(s: dict, refresh) -> bool:
+    # ENXUGAMENTO (23/08/2026, pedido da orientadora): fctk fixo (4,8 MPa, o
+    # mesmo valor do exemplo do manual) e FSC automatico pelo volume de
+    # trafego (Quadro 9) -- deixaram de ser campos editaveis. Historico do
+    # comportamento anterior (campos ui.number com os defaults e ranges) fica
+    # no git, commit "Corrige modelo de erosao...", caso precise reverter.
+    n_total = sum(f.repeticoes_previstas for f in (s.get("espectro") or []))
+    fsc_auto = c.fsc_automatico(n_total)
     with ui.column().classes("w-full max-w-3xl mx-auto cartao p-8 gap-3 aparecer"):
         ung.pergunta("Como será o concreto da placa?",
-                    "Acostamento e barras mudam as tabelas do método; fctk e FSC têm "
-                    "defaults do manual — ajuste se tiver dado de projeto.")
+                    "Acostamento e barras mudam as tabelas do método.")
         with ui.row().classes("w-full gap-10"):
             with ui.column().classes("gap-1"):
                 ui.label("Acostamento de concreto").classes("text-base font-bold") \
@@ -814,23 +817,19 @@ def render_concreto(s: dict, refresh) -> bool:
                     .style(f"color:{ung.TEXTO}")
                 barras = ui.toggle(["Sem", "Com"], value=s.get("barras", "Sem")) \
                     .props("no-caps toggle-color=amber-8 size=lg")
-        with ui.expansion("Parâmetros do concreto (avançado)").classes("w-full"):
-            fctk = ui.number("Resistência à tração na flexão fctk (MPa)", value=s.get("fctk", 4.8),
-                             min=3.0, max=6.0, step=0.1).props("outlined dense").classes("w-72")
-            ui.label("NBR 12142, 28 dias. Exemplo do IPR-714: 4,8 MPa; usual 4,5–5,0 MPa.") \
-                .classes("text-xs text-slate-400")
-            fsc = ui.number("Fator de segurança de cargas (FSC)", value=s.get("fsc", 1.2),
-                            min=1.0, max=1.5, step=0.1).props("outlined dense").classes("w-72")
-            ui.label("Quadro 9 IPR-714: 1,0 estacionamentos · 1,1 moderado · 1,2 alto volume · até 1,5.") \
-                .classes("text-xs text-slate-400")
+        ui.label(f"fctk = {c.FCTK_PADRAO_MPA:.1f} MPa (NBR 12142, 28 dias — valor do exemplo "
+                 f"do IPR-714) · FSC = {fsc_auto:.1f} automático pelo volume de tráfego "
+                 f"previsto ({n_total:,.0f} repetições — Quadro 9 IPR-714)".replace(",", ".")) \
+            .classes("text-xs text-slate-400")
 
         def _sync():
             s["acost"] = acost.value
             s["barras"] = barras.value
-            s["fctk"] = fctk.value
-            s["fsc"] = fsc.value
+            s["fctk"] = c.FCTK_PADRAO_MPA
+            s["fsc"] = c.fsc_automatico(
+                sum(f.repeticoes_previstas for f in (s.get("espectro") or [])))
 
-        for w in (acost, barras, fctk, fsc):
+        for w in (acost, barras):
             w.on_value_change(lambda _: _sync())
         _sync()
     return True
@@ -855,7 +854,9 @@ def _bignum(n):
 
 def _param_do_estado(s: dict) -> c.ParametrosProjeto:
     return c.ParametrosProjeto(
-        fctk_mpa=s.get("fctk", 4.8), k_mpa_m=s.get("k_efetivo", 50.0), fsc=s.get("fsc", 1.2),
+        fctk_mpa=c.FCTK_PADRAO_MPA, k_mpa_m=s.get("k_efetivo", 50.0),
+        fsc=s.get("fsc") or c.fsc_automatico(
+            sum(f.repeticoes_previstas for f in (s.get("espectro") or []))),
         acostamento=(c.TipoAcostamento.COM_CONCRETO if s.get("acost") == "Com"
                      else c.TipoAcostamento.SEM_CONCRETO),
         com_barras_transferencia=(s.get("barras") == "Com"),
@@ -1059,7 +1060,7 @@ def _painel_falha_h(s: dict, refresh, p: c.ParametrosProjeto) -> None:
          "Sub-base cimentada (BGTC/CCR) eleva o k e reduz muito a erosão."),
         ("🏗️ Concreto da placa", "concreto",
          "Acostamento de concreto e barras de transferência reduzem a espessura "
-         "necessária; fctk maior também ajuda."),
+         "necessária."),
         ("🚚 Tráfego", "trafego",
          "Confira as cargas e repetições do espectro — um exagero no N "
          "inviabiliza qualquer espessura."),
@@ -1140,7 +1141,7 @@ def render_memoria(s: dict, refresh) -> bool:
                 {"name": "n", "label": "N previsto", "field": "n"},
             ], pagination=8).classes("w-full")
 
-        ui.label("Critério: testa-se h de 10 a 40 cm (passo 0,5) e adota-se a menor espessura "
+        ui.label("Critério: testa-se h de 10 a 40 cm (número inteiro) e adota-se a menor espessura "
                  "cujo consumo de fadiga E de erosão fique ≤ 100%.").classes("text-sm text-slate-500")
 
         # --- Busca iterativa da espessura (o loop, demonstrado) ---
@@ -1365,195 +1366,21 @@ def render_resultado(s: dict, refresh) -> bool:
                 ung.resultado_destaque(resultado.h_cm, aprovada)
                 ung.barra_consumo("Consumo de fadiga", resultado.soma_fadiga_pct)
                 ung.barra_consumo("Consumo de erosão", resultado.soma_erosao_pct)
-                ui.label("Menor espessura (passo 0,5 cm) em que fadiga E erosão ficam ≤ 100% — "
-                         "critério duplo do método PCA 1984 (IPR-714).").classes("text-xs text-slate-400")
+                ui.label("Menor espessura (número inteiro de cm) em que fadiga E erosão ficam "
+                         "≤ 100% — critério duplo do método PCA 1984 (IPR-714).") \
+                    .classes("text-xs text-slate-400")
 
             with ui.column().classes("w-full cartao p-8 gap-3"):
                 ui.label("Espessura × consumo").classes("font-bold")
                 ui.echart(_echart_curva(curva, resultado.h_cm)).classes("w-full h-64")
-
-            with ui.expansion("🔬 Análise de sensibilidade (tornado)").classes("w-full cartao"):
-                espectro_t = tuple((f.eixo.value, f.carga_tf, f.repeticoes_previstas) for f in p.espectro)
-                try:
-                    h_b, linhas = _tornado_cached(p.fctk_mpa, p.k_mpa_m, p.fsc, p.acostamento.value,
-                                                  p.com_barras_transferencia, espectro_t)
-                    import base64
-                    import io
-                    buf = io.BytesIO()
-                    sens.grafico_tornado(h_b, linhas).savefig(buf, format="png", dpi=130, bbox_inches="tight")
-                    ui.image("data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()).classes("w-full")
-                    if any(ln.estourou for ln in linhas):
-                        ui.label("Em algum cenário nenhuma espessura ≤ 40 cm atendeu os critérios.") \
-                            .classes("text-amber-700 text-xs")
-                except ValueError as exc:
-                    ui.label(str(exc)).classes("text-red-600")
-
-        # Recomendacao de sub-base
-        with ui.column().classes("w-full cartao p-8 gap-3"):
-            ui.label("🧱 Recomendação de sub-base").classes("font-bold")
-            rec = rsb.recomendar(s.get("n_pesados", 0), s.get("k0", 50.0))
-            ui.label(f"Tráfego {rec.nivel_trafego} · subleito {rec.nivel_subleito} "
-                     f"(k0 ≈ {s.get('k0', 50):.0f})").classes("text-xs text-slate-500")
-            escolhido = s.get("tipo_sb")
-            if rec.tipo_recomendado == escolhido:
-                ui.label(f"Recomendado: {rec.tipo_recomendado} — coincide com a sua escolha. "
-                         f"{rec.justificativa}").classes("text-green-700")
-            else:
-                ui.label(f"Recomendado: {rec.tipo_recomendado} (você escolheu {escolhido}). "
-                         f"{rec.justificativa}").classes("text-blue-700")
-            rows = [{"Sub-base": o["tipo"],
-                    "k efetivo": (round(o["k_efetivo"]) if o["k_efetivo"] is not None else "—"),
-                    "Custo R$/m³": o["custo_m3"],
-                    "Ganho k": (round(o["ganho_k"]) if o["ganho_k"] is not None else "—"),
-                    "": ("★ recomendada" if o["nota"] else
-                         ("💰 custo-efetiva" if o["tipo"] == rec.mais_custo_efetiva else ""))}
-                    for o in rec.opcoes]
-            ui.table(columns=[{"name": k, "label": k, "field": k} for k in rows[0]],
-                     rows=rows, row_key="Sub-base").classes("w-full").props("flat dense")
-            ui.label(f"k efetivo p/ {rsb.ESP_REF_CM:.0f} cm · {rec.ressalva}").classes("text-xs text-slate-400")
-
-        # LCCA
-        lcca_res = None
-        if resultado is not None:
-            with ui.column().classes("w-full cartao p-8 gap-3") as lcca_card:
-                ui.label("💰 Custo de ciclo de vida (LCCA)").classes("font-bold")
-                ui.label("Comparação em VPL por m²: rígido dimensionado × flexível de referência "
-                         "(não dimensionado). Custos SICRO RJ jan/2026.").classes("text-xs text-slate-500")
-                n_total = sum(f.repeticoes_previstas for f in p.espectro)
-                with ui.row().classes("w-full gap-4"):
-                    hor_in = ui.number("Horizonte (anos)", value=lc.HORIZONTE_PADRAO,
-                                       min=20, max=40, step=5).props("outlined dense").classes("w-36")
-                    tx_in = ui.number("Taxa de desconto (% a.a.)", value=lc.TAXA_DESCONTO_PADRAO * 100,
-                                      min=4.0, max=12.0, step=0.5).props("outlined dense").classes("w-48")
-                    cbuq_in = ui.number("CBUQ do flexível (cm)", value=lc.espessura_cbuq_cm(n_total),
-                                        min=5.0, max=20.0, step=0.5).props("outlined dense").classes("w-44")
-                resultado_lcca_area = ui.column().classes("w-full gap-2")
-
-                def _calc_lcca():
-                    resultado_lcca_area.clear()
-                    hor = int(hor_in.value)
-                    r = lc.comparar(h_cm=resultado.h_cm, tipo_subbase=s.get("tipo_sb") or "Sem sub-base",
-                                    esp_subbase_cm=float(s.get("esp_sb") or 0), n_eixo_padrao=n_total,
-                                    horizonte=hor, taxa=tx_in.value / 100,
-                                    esp_cbuq_cm=cbuq_in.value)
-                    with resultado_lcca_area:
-                        # --- numero-heroi: CUSTO POR ANO (CAUE) ---
-                        cauer, cauef = r.caue_rigido, r.caue_flexivel
-                        with ui.row().classes("w-full gap-3 items-stretch"):
-                            for nome, caue_v, vpl, capex, destaque in (
-                                    ("🛣️ Rígido (concreto)", cauer, r.vpl_rigido,
-                                     r.rigido.capex_m2, cauer <= cauef),
-                                    ("🛢️ Asfalto (referência)", cauef, r.vpl_flexivel,
-                                     r.flexivel.capex_m2, cauef < cauer)):
-                                borda = "#C8861F" if destaque else "#EDF0F2"
-                                with ui.column().classes("flex-1 rounded-xl p-4 gap-0 border-2") \
-                                        .style(f"border-color:{borda};"
-                                               f"background:{'#FDF9F0' if destaque else '#F8FAFB'}"):
-                                    ui.label(nome).classes("text-xs text-slate-500 font-semibold")
-                                    with ui.row().classes("items-baseline gap-1"):
-                                        ui.label(f"R$ {caue_v:.2f}".replace(".", ",")) \
-                                            .classes("text-3xl font-extrabold").style(f"color:{ung.TEXTO}")
-                                        ui.label("/m² por ano").classes("text-sm text-slate-400 font-semibold")
-                                    ui.label(f"construir: R$ {capex:.2f}/m² · total em {hor} anos "
-                                             f"(VP): R$ {vpl:.2f}/m²".replace(".", ",")) \
-                                        .classes("text-xs text-slate-400 mt-1")
-                        dif = abs(cauer - cauef) / max(cauer, cauef) * 100
-                        vencedor = "rígido" if cauer <= cauef else "asfalto"
-                        ui.label(f"Neste cenário, o {vencedor} custa {dif:.0f}% menos por ano "
-                                 f"ao longo de {hor} anos.").classes("text-sm font-semibold") \
-                            .style(f"color:{ung.AMBAR_ESC}")
-
-                        # --- como a comparacao e feita (didatico) ---
-                        with ui.expansion("ℹ️ Como essa comparação é feita?").classes("w-full"):
-                            passos = (
-                                ("1", "Quanto custa construir hoje",
-                                 "Cada camada é multiplicada pelo custo oficial SICRO/DNIT "
-                                 "(RJ, jan/2026) — veja a decomposição no gráfico abaixo."),
-                                ("2", "O que cada pavimento gasta depois",
-                                 "O asfalto exige recapeamento nos anos 8, 16 e 24 e conserva "
-                                 "anual; o rígido, resselagem de juntas (anos 8/16/24) e um "
-                                 "reparo pontual de placas (ano 15)."),
-                                ("3", "Dinheiro futuro vale menos",
-                                 "Um gasto de R$ 100 daqui a 10 anos equivale a menos que R$ 100 "
-                                 "hoje. Cada custo futuro é trazido a valor presente pela taxa "
-                                 "de desconto (ajustável acima)."),
-                                ("4", "Soma e comparação",
-                                 "A soma de tudo em valor presente é o VPL; dividindo pelo "
-                                 "horizonte (fator de recuperação de capital) chega-se ao "
-                                 "custo anual equivalente mostrado acima."),
-                            )
-                            for num, tit, txt in passos:
-                                with ui.row().classes("items-start gap-3 my-1"):
-                                    ui.label(num).classes(
-                                        "text-sm font-extrabold rounded-full bg-amber-50 "
-                                        "px-2.5 py-0.5").style(f"color:{ung.AMBAR_ESC}")
-                                    with ui.column().classes("gap-0"):
-                                        ui.label(tit).classes("text-sm font-bold").style(f"color:{ung.TEXTO}")
-                                        ui.label(txt).classes("text-xs text-slate-500")
-                            ui.html(
-                                r"\[VPL=\sum_{t=0}^{n}\frac{C_t}{(1+i)^t}\qquad "
-                                r"CAUE = VPL\cdot\frac{i\,(1+i)^n}{(1+i)^n-1}\]")
-                            ui.label("C_t = custo no ano t · i = taxa de desconto · n = horizonte. "
-                                     "Fontes: custos SICRO RJ jan/2026; espessura do asfalto de "
-                                     "referência pela tabela do IPR-719.").classes("text-xs text-slate-400")
-                            ung.mathjax_typeset()
-
-                        # --- decomposicao do CAPEX (de onde vem o custo de construir) ---
-                        ui.label("De onde vem o custo de construção").classes("font-semibold text-sm mt-1")
-                        ui.echart(_echart_capex(r)).classes("w-full h-44")
-
-                        # --- linha do tempo dos gastos ---
-                        ui.label("Quando cada pavimento gasta").classes("font-semibold text-sm mt-1")
-                        ui.echart(_echart_timeline(r)).classes("w-full h-40")
-                        conserva = lc.CONSERVA_FLEX_FRAC * r.flexivel.capex_m2
-                        ui.label("Bolha maior = gasto maior (passe o mouse para ver o evento). "
-                                 "O asfalto tem ainda conserva anual leve de R$ "
-                                 + f"{conserva:.2f}".replace(".", ",") +
-                                 "/m² por ano, incluída nos totais e na tabela abaixo.") \
-                            .classes("text-xs text-slate-400")
-
-                        # --- curva acumulada ---
-                        ui.label("Custo acumulado ao longo dos anos (valor presente)") \
-                            .classes("font-semibold text-sm mt-1")
-                        ui.echart(_echart_lcca(r)).classes("w-full h-56")
-                        if r.vantagem_rigido:
-                            msg = f"No horizonte de {hor} anos, o rígido tem menor custo de ciclo de vida"
-                            if r.ano_cruzamento:
-                                msg += f" — o acumulado cruza no ano {r.ano_cruzamento}"
-                            ui.label(msg + ".").classes("text-green-700")
-                        else:
-                            ui.label("No horizonte analisado, o asfalto de referência resulta mais barato "
-                                     "em valor presente. Fatores não monetizados (interrupções de tráfego "
-                                     "nos recapes, vida residual, CO₂) tendem a favorecer o rígido.") \
-                                .classes("text-blue-700 text-sm")
-                        with ui.expansion("🧮 Ver a conta inteira (ano a ano)").classes("w-full"):
-                            ui.label("Cada custo futuro × fator de desconto 1/(1+i)^t = valor "
-                                     "presente; a última coluna acumula.").classes("text-xs text-slate-400")
-                            cols = [
-                                {"name": "alt", "label": "Pavimento", "field": "alt", "align": "left"},
-                                {"name": "ano", "label": "Ano", "field": "ano"},
-                                {"name": "evento", "label": "Evento", "field": "evento", "align": "left"},
-                                {"name": "nominal", "label": "Custo nominal", "field": "nominal"},
-                                {"name": "fator", "label": "Fator desc.", "field": "fator"},
-                                {"name": "vp", "label": "Valor presente", "field": "vp"},
-                                {"name": "acum", "label": "Acumulado (VP)", "field": "acum"},
-                            ]
-                            ui.table(columns=cols, rows=_linhas_ano_a_ano(r),
-                                     pagination=12).classes("w-full").props("dense flat")
-
-                        with ui.expansion("Memória de custos (de onde veio cada número)").classes("w-full"):
-                            for alt in (r.rigido, r.flexivel):
-                                ui.label(f"{alt.nome} — CAPEX R$ {alt.capex_m2:.2f}/m²".replace(".", ",")) \
-                                    .classes("font-semibold text-sm")
-                                for nome_c, val_c, fonte_c in alt.componentes:
-                                    ui.label(f"• {nome_c}: R$ {val_c:.2f}/m² ({fonte_c})".replace(".", ",")) \
-                                        .classes("text-xs text-slate-500")
-                    s["_lcca_res"] = r
-
-                for w in (hor_in, tx_in, cbuq_in):
-                    w.on_value_change(lambda _: _calc_lcca())
-                _calc_lcca()
-                lcca_res = s.get("_lcca_res")
+            # ENXUGAMENTO (23/08/2026, pedido da orientadora): "deixar apenas o
+            # dimensionamento" -- removidos daqui os painéis de análise de
+            # sensibilidade (tornado), recomendação de sub-base e custo de
+            # ciclo de vida (LCCA). O código-fonte (sensibilidade.py,
+            # recomenda_subbase.py, lcca.py) continua intacto e funcional;
+            # histórico completo da UI removida está no git (commit "Corrige
+            # modelo de erosao..." e anteriores) e documentado na memória do
+            # projeto, caso valha a pena reincorporar como "trabalhos futuros".
 
         # Exportar PDF
         with ui.column().classes("w-full cartao p-8 gap-3"):
