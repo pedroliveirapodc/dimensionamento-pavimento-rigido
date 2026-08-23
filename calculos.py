@@ -192,60 +192,107 @@ def repeticoes_admissiveis_fadiga(tensao_eq: float, mr: float,
     return 10.0 ** (11.737 - 12.077 * sr)
 
 
-# --- Constantes da equacao de erosao (Packard 1984) ---
-# Forma documentada do abaco de erosao (Figuras 28/29 do IPR-714):
-#   log10(N) = 14.524 - 6.777 * (C1 * X - 9.0)^0.103
-# onde X e a "taxa de trabalho" combinando fator de erosao e carga.
-_ERO_A = 14.524
-_ERO_B = 6.777
-_ERO_C = 9.0
-_ERO_EXP = 0.103
-# C1: ajuste por acostamento (Fig.28 sem / Fig.29 com).
-_C1_SEM_ACOSTAMENTO = 1.0
-_C1_COM_ACOSTAMENTO = 0.90   # PROVISORIO - calibrar com Fig.29
+# --- Leitura da Figura 28 (sem acostamento) / Figura 29 (com acostamento) ---
+# DIGITALIZACAO DIRETA DO ABACO (23/08/2026 — substitui a regressao empirica
+# anterior). As Figuras 28/29 do IPR-714 sao NOMOGRAMAS de 3 escalas paralelas
+# (carga por eixo | fator de erosao | numero admissivel de repeticoes): a
+# leitura correta e tracar uma reta do ponto da carga ao ponto do fator de
+# erosao e ler N onde essa reta cruza a 3a escala.
+#
+# As duas figuras foram extraidas da imagem raster embutida no PDF (mesma
+# tecnica de PyMuPDF ja usada p/ Figs.11/18-21, mas aqui com deteccao
+# pixel-a-pixel das posicoes dos tracos de escala em vez de leitura visual —
+# ver _fit_erosao_v3.py e a sessao de 23/08/2026 na memoria do projeto p/ o
+# processo completo). Cada escala foi calibrada contra os proprios numeros
+# impressos: carga (log), fator de erosao (linear), N admissivel (log, com um
+# termo quadratico extra p/ a Fig.29 cuja escala de N nao e perfeitamente
+# log-linear). A extrapolacao geometrica (formula de retas por 3 pontos
+# colineares em linhas paralelas, p3 = p1 + (p2-p1)*w) foi ainda corrigida por
+# um pequeno ajuste (w, offset) contra os 34 pontos OFICIAIS do Quadro 11/24
+# do manual — os UNICOS dados reais disponiveis, e todos da Figura 28.
+#
+# RESULTADO: Figura 28 (sem acostamento) — erro medio 8,0% / max 20,9% sobre
+# os 34 pontos oficiais. VALIDADA e generaliza suavemente por TODO o fator de
+# erosao impresso (2,0 a 4,0), sem precisar de clamp/saturacao — corrige o
+# problema dos Casos 2/4 do EXEMPLO_4_CASOS (que davam resultado identico por
+# saturarem no mesmo piso calibrado).
+# Figura 29 (com acostamento) — MESMO metodo de digitalizacao pixel-a-pixel,
+# mas SEM ajuste empirico (w geometrico puro), pois o UNICO exemplo oficial do
+# manual e sem acostamento — nao ha dado real p/ validar a Fig.29 numericamente.
+# ⚠️ LIMITACAO EM ABERTO: a Fig.29 fica sem validacao ponto-a-ponto; usar os
+# resultados de casos COM acostamento com essa ressalva ate aparecer um 2o
+# exemplo oficial (ou conferencia manual direta) p/ confirmar a precisao.
+# Substitui o antigo C1_COM_ACOSTAMENTO=0,90 (que era so um multiplicador
+# provisorio sobre a Fig.28 — a Fig.29 e um abaco proprio, nao uma Fig.28
+# escalada; ver a diferenca de faixa do eixo de EF: 2,0-4,0 na Fig.28 x
+# 1,6-3,6 na Fig.29).
+_NOMO = {
+    TipoAcostamento.SEM_CONCRETO: dict(
+        a1=1543.19, b1=-467.13,              # p1(carga) = a1 + b1*ln(carga_equiv)
+        a2=-497.76, b2=297.56,               # p2(EF)    = a2 + b2*EF
+        a3=1556.11, b3=-204.39, c3=0.0,      # p3(N) = a3 + b3*L + c3*L^2, L=log10 N
+        w=2.2040, offset=-27.158,            # extrapolacao geometrica (calibrada c/ Quadro 11/24)
+        carga_min=4.0, carga_max=26.0, ef_min=2.0, ef_max=4.0,
+    ),
+    TipoAcostamento.COM_CONCRETO: dict(
+        a1=1513.2467576, b1=-460.72224491,
+        a2=-503.07786561, b2=320.16106719,
+        a3=2134.12928571, b3=-470.36035714, c3=25.35535714,
+        w=2.3289256198347106, offset=0.0,    # geometrico puro -- NAO validado (ver nota acima)
+        carga_min=4.0, carga_max=26.0, ef_min=1.6, ef_max=3.6,
+    ),
+}
 
-# >>> RECONSTRUCAO EMPIRICA DE X (taxa de trabalho) <<<
-# O manual NAO fornece a expressao fechada de X; so o abaco (Fig.28). Calibramos
-# X contra os 9 pontos do exemplo do manual (h=25, k=100, PSAC, EF_ES=2,72).
-# Modelo quadratico em log da carga (ajuste por minimos quadrados, ver
-# _fit_erosao.py): erro medio 3,2% / max 7,0% sobre o exemplo.
-#   u = ln(carga_tf)
-#   X = 10^(fator_eros) * exp(_ERO_A0 + _ERO_B1*u + _ERO_C2*u^2)
-# ATENCAO: a dependencia em EF (assumida proporcional a 10^EF) foi ajustada
-# com UMA unica curva (EF=2,72). A FORMA em funcao da carga esta bem reproduzida,
-# mas a generalizacao para outros EF precisa de mais pontos do abaco OU da
-# equacao publicada de Packard. Ver validar_erosao.py.
-_ERO_A0 = -2.0913   # = 4.1718 - 2,72*ln(10), extraindo o fator 10^EF
-_ERO_B1 = -2.4000
-_ERO_C2 = 0.7108
+_CARGA_DIVISOR_EROSAO = {
+    TipoEixo.SIMPLES: 1.0,
+    TipoEixo.TANDEM_DUPLO: 2.0,   # Fig.28/29 tem escala dedicada p/ ETD a 2x a posicao do ES
+    TipoEixo.TANDEM_TRIPLO: 1.0,  # ja chega dividido por 3 via _carga_efetiva
+}
+
+
+def _ler_nomograma(carga_equiv_tf: float, fator_eros: float,
+                    acostamento: TipoAcostamento) -> float:
+    """Le N admissivel na Figura 28/29 digitalizada (ver nota acima)."""
+    p = _NOMO[acostamento]
+    carga_equiv_tf = min(max(carga_equiv_tf, p["carga_min"]), p["carga_max"])
+    ef = min(max(fator_eros, p["ef_min"]), p["ef_max"])
+    p1 = p["a1"] + p["b1"] * math.log(carga_equiv_tf)
+    p2 = p["a2"] + p["b2"] * ef
+    p3 = p1 + (p2 - p1) * p["w"] + p["offset"]
+    a3, b3, c3 = p["a3"], p["b3"], p["c3"]
+    if c3 == 0.0:
+        log_n = (p3 - a3) / b3
+    else:
+        disc = b3 * b3 - 4 * c3 * (a3 - p3)
+        if disc < 0:
+            return N_ILIMITADO   # reta sai por cima do topo impresso (10^8) -> N gigante
+        raiz = math.sqrt(disc)
+        candidatos = [l for l in ((-b3 + raiz) / (2 * c3), (-b3 - raiz) / (2 * c3))
+                      if 2.0 <= l <= 9.0]
+        log_n = candidatos[0] if candidatos else max((-b3 + raiz) / (2 * c3),
+                                                       (-b3 - raiz) / (2 * c3))
+    if log_n > 8.3:   # acima do topo impresso da escala (10^8)
+        return N_ILIMITADO
+    return 10.0 ** log_n
 
 
 def repeticoes_admissiveis_erosao(fator_eros: float, carga_tf: float,
-                                  acostamento: TipoAcostamento) -> float:
+                                  acostamento: TipoAcostamento,
+                                  eixo: TipoEixo = TipoEixo.SIMPLES) -> float:
     """
-    Numero admissivel de repeticoes pelo criterio de EROSAO (Figuras 28/29).
+    Numero admissivel de repeticoes pelo criterio de EROSAO -- leitura da
+    Figura 28 (sem acostamento) ou 29 (com acostamento) digitalizada.
 
     Entrada:
       fator_eros : fator de erosao lido dos Quadros 16-23 (f de h, k, eixo)
       carga_tf   : carga por eixo JA majorada pelo FSC, em tf
                    (tandem triplo: usar 1/3 da carga, ver _carga_efetiva)
-      acostamento: seleciona C1 (Fig.28 sem / Fig.29 com acostamento)
-
-    Modelo (Packard 1984, X calibrado empiricamente - ver nota acima):
-      u = ln(carga_tf)
-      X = 10^(fator_eros) * exp(_ERO_A0 + _ERO_B1*u + _ERO_C2*u^2)
-      se C1*X <= _ERO_C  -> repeticoes ilimitadas
-      senao  log10(N) = _ERO_A - _ERO_B * (C1*X - _ERO_C)^_ERO_EXP
+      acostamento: escolhe a Figura 28 (sem) ou 29 (com)
+      eixo       : define o divisor de carga p/ a escala equivalente a eixo
+                   simples da Figura (ver _CARGA_DIVISOR_EROSAO)
     """
-    c1 = (_C1_SEM_ACOSTAMENTO if acostamento == TipoAcostamento.SEM_CONCRETO
-          else _C1_COM_ACOSTAMENTO)
-    u = math.log(carga_tf)
-    x = (10.0 ** fator_eros) * math.exp(_ERO_A0 + _ERO_B1 * u + _ERO_C2 * u * u)
-    base = c1 * x - _ERO_C
-    if base <= 0:
-        return N_ILIMITADO
-    log_n = _ERO_A - _ERO_B * (base ** _ERO_EXP)
-    return 10.0 ** log_n
+    carga_equiv = carga_tf / _CARGA_DIVISOR_EROSAO[eixo]
+    return _ler_nomograma(carga_equiv, fator_eros, acostamento)
 
 
 # =====================================================================
@@ -337,7 +384,8 @@ def verificar_espessura(h_cm: float, p: ParametrosProjeto) -> ResultadoEspessura
         # --- Erosao ---
         fe = fator_erosao(h_cm, p.k_mpa_m, faixa.eixo,
                           p.acostamento, p.com_barras_transferencia)
-        n_adm_erosao = repeticoes_admissiveis_erosao(fe, carga_ef, p.acostamento)
+        n_adm_erosao = repeticoes_admissiveis_erosao(
+            fe, carga_ef, p.acostamento, faixa.eixo)
         consumo_e = 100.0 * faixa.repeticoes_previstas / n_adm_erosao
 
         soma_fadiga += consumo_f

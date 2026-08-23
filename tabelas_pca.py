@@ -251,6 +251,46 @@ def consultar(tabela: dict, k_eixo: list[float], h_cm: float, k_mpa_m: float,
     return _interp1d([float(h) for h in hs], valores_por_h, h_cm)
 
 
+def consultar_detalhado(tabela: dict, k_eixo: list[float], h_cm: float,
+                        k_mpa_m: float, indice_coluna: int | None = None) -> dict:
+    """
+    Como consultar(), mas devolve tambem os nos vizinhos (h1,h2,k1,k2), os
+    quatro valores de canto e os passos intermediarios da interpolacao
+    bilinear — para a memoria de calculo DEMONSTRAR a conta da tabela.
+    Segue a mesma logica de consultar(): clamp constante fora das bordas.
+    """
+    hs = sorted(tabela.keys())
+
+    def _valor(h_int: int, j: int) -> float:
+        cel = tabela[h_int][j]
+        return cel if indice_coluna is None else cel[indice_coluna]
+
+    def _brackets(xs: list[float], x: float) -> tuple[int, int]:
+        if x <= xs[0]:
+            return 0, 0
+        if x >= xs[-1]:
+            return len(xs) - 1, len(xs) - 1
+        for i in range(len(xs) - 1):
+            if xs[i] <= x <= xs[i + 1]:
+                return i, i + 1
+        return len(xs) - 1, len(xs) - 1
+
+    j1, j2 = _brackets([float(k) for k in k_eixo], k_mpa_m)
+    i1, i2 = _brackets([float(h) for h in hs], h_cm)
+    h1, h2 = hs[i1], hs[i2]
+    k1, k2 = k_eixo[j1], k_eixo[j2]
+    v11, v12 = _valor(h1, j1), _valor(h1, j2)
+    v21, v22 = _valor(h2, j1), _valor(h2, j2)
+    tk = 0.0 if k2 == k1 else (k_mpa_m - k1) / (k2 - k1)
+    th = 0.0 if h2 == h1 else (h_cm - h1) / (h2 - h1)
+    vh1 = v11 + (v12 - v11) * tk
+    vh2 = v21 + (v22 - v21) * tk
+    valor = vh1 + (vh2 - vh1) * th
+    return {"valor": valor, "h1": h1, "h2": h2, "k1": k1, "k2": k2,
+            "v11": v11, "v12": v12, "v21": v21, "v22": v22,
+            "vh1": vh1, "vh2": vh2, "tk": tk, "th": th}
+
+
 # Validacao rapida contra o exemplo do manual (h=25, k=100, PSAC)
 if __name__ == "__main__":
     es = consultar(Q12_ES_ETD_PSAC, K_ES_ETD, 25, 100, indice_coluna=0)

@@ -19,6 +19,7 @@ import os
 from nicegui import ui
 
 import calculos as c
+import tabelas_pca as tabp
 import estagio3 as e3
 import perfis_trafego as pt
 import pnct_dados as pnct
@@ -861,15 +862,84 @@ def _param_do_estado(s: dict) -> c.ParametrosProjeto:
         espectro=s.get("espectro") or [])
 
 
-def _memoria_faixa_html(d, fsc: float) -> str:
+# Nome dos quadros do IPR-714, por identidade da tabela (p/ citar a fonte na memoria)
+_NOME_QUADRO = {
+    id(tabp.Q12_ES_ETD_PSAC): "Quadro 12 — σ_eq ES/ETD, sem acostamento",
+    id(tabp.Q13_ETT_PSAC): "Quadro 13 — σ_eq ETT, sem acostamento",
+    id(tabp.Q14_ES_ETD_PCAC): "Quadro 14 — σ_eq ES/ETD, com acostamento",
+    id(tabp.Q15_ETT_PCAC): "Quadro 15 — σ_eq ETT, com acostamento",
+    id(tabp.Q16_ES_ETD_JSP_PSAC): "Quadro 16 — FE ES/ETD, sem barras, sem acostamento",
+    id(tabp.Q17_ETT_JSP_PSAC): "Quadro 17 — FE ETT, sem barras, sem acostamento",
+    id(tabp.Q18_ES_ETD_JSP_PCAC): "Quadro 18 — FE ES/ETD, sem barras, com acostamento",
+    id(tabp.Q19_ETT_JSP_PCAC): "Quadro 19 — FE ETT, sem barras, com acostamento",
+    id(tabp.Q20_ES_ETD_JCP_PSAC): "Quadro 20 — FE ES/ETD, com barras, sem acostamento",
+    id(tabp.Q21_ETT_JCP_PSAC): "Quadro 21 — FE ETT, com barras, sem acostamento",
+    id(tabp.Q22_ES_ETD_JCP_PCAC): "Quadro 22 — FE ES/ETD, com barras, com acostamento",
+    id(tabp.Q23_ETT_JCP_PCAC): "Quadro 23 — FE ETT, com barras, com acostamento",
+}
+
+
+def _interp_html(det: dict, simbolo: str, h_cm: float, k: float, dec: int = 3) -> str:
+    """Demonstra a interpolacao bilinear: 4 cantos da tabela + as 3 contas."""
+    exato_h = det["h1"] == det["h2"]
+    exato_k = det["k1"] == det["k2"]
+    linhas = [
+        f"<p class='text-xs' style='color:#64748b'>Células vizinhas da tabela "
+        f"(h em cm × k em MPa/m):</p>",
+        "<table style='border-collapse:collapse;font-size:0.8rem;margin:2px 0 6px 12px'>"
+        f"<tr><td style='padding:2px 10px'></td>"
+        f"<td style='padding:2px 10px'><b>k={det['k1']:g}</b></td>"
+        f"<td style='padding:2px 10px'><b>k={det['k2']:g}</b></td></tr>"
+        f"<tr><td style='padding:2px 10px'><b>h={det['h1']:g}</b></td>"
+        f"<td style='padding:2px 10px'>{_v(det['v11'], dec)}</td>"
+        f"<td style='padding:2px 10px'>{_v(det['v12'], dec)}</td></tr>"
+        f"<tr><td style='padding:2px 10px'><b>h={det['h2']:g}</b></td>"
+        f"<td style='padding:2px 10px'>{_v(det['v21'], dec)}</td>"
+        f"<td style='padding:2px 10px'>{_v(det['v22'], dec)}</td></tr></table>",
+    ]
+    if exato_h and exato_k:
+        linhas.append(rf"\[{simbolo} = {_v(det['valor'], dec)}\ \text{{(valor direto da tabela)}}\]")
+        return "".join(linhas)
+    if not exato_k:
+        linhas.append(
+            rf"\[{simbolo}(h{{=}}{det['h1']:g}) = {_v(det['v11'], dec)} + "
+            rf"\tfrac{{{k:g}-{det['k1']:g}}}{{{det['k2']:g}-{det['k1']:g}}}"
+            rf"\,({_v(det['v12'], dec)} - {_v(det['v11'], dec)}) = {_v(det['vh1'], dec)}\]")
+        if not exato_h:
+            linhas.append(
+                rf"\[{simbolo}(h{{=}}{det['h2']:g}) = {_v(det['v21'], dec)} + "
+                rf"{_v(det['tk'], 3)}\,({_v(det['v22'], dec)} - {_v(det['v21'], dec)})"
+                rf" = {_v(det['vh2'], dec)}\]")
+    if not exato_h:
+        linhas.append(
+            rf"\[{simbolo} = {_v(det['vh1'], dec)} + "
+            rf"\tfrac{{{h_cm:g}-{det['h1']:g}}}{{{det['h2']:g}-{det['h1']:g}}}"
+            rf"\,({_v(det['vh2'], dec)} - {_v(det['vh1'], dec)}) = {_v(det['valor'], dec)}\]")
+    else:
+        linhas.append(rf"\[{simbolo} = {_v(det['valor'], dec)}\]")
+    return "".join(linhas)
+
+
+def _memoria_faixa_html(d, p: c.ParametrosProjeto, h_cm: float) -> str:
+    fsc = p.fsc
     triplo = d.faixa.eixo == c.TipoEixo.TANDEM_TRIPLO
     extra = r"\,/\,3" if triplo else ""
     partes = [
         f"<p><b>1. Carga efetiva</b> (carga × FSC{', tandem triplo ÷3' if triplo else ''}):</p>",
         rf"\[P_{{ef}} = {_v(d.faixa.carga_tf)} \times {_v(fsc)}{extra} = {_v(d.carga_efetiva)}\ \text{{tf}}\]",
-        "<p><b>2. Tensão equivalente</b> (interpolada dos Quadros 12–15, função de <i>h</i> e <i>k</i>):</p>",
-        rf"\[\sigma_{{eq}} = {_v(d.sigma_eq, 3)}\ \text{{MPa}}\]",
-        "<p><b>3. Relação de tensões</b> (a tensão escala com a carga elevada a 0,94):</p>",
+    ]
+
+    # --- 2. Tensao equivalente: quadro usado + interpolacao demonstrada ---
+    tbl_t, kx_t, col_t = c._TENSAO[(p.acostamento, d.faixa.eixo)]
+    det_t = tabp.consultar_detalhado(tbl_t, kx_t, h_cm, p.k_mpa_m, col_t)
+    partes += [
+        f"<p><b>2. Tensão equivalente</b> — {_NOME_QUADRO.get(id(tbl_t), 'Quadros 12–15')} "
+        f"(IPR-714), interpolação bilinear em h = {_v(h_cm, 1)} cm, "
+        f"k = {p.k_mpa_m:g} MPa/m:</p>",
+        _interp_html(det_t, r"\sigma_{eq}", h_cm, p.k_mpa_m),
+        rf"\[\boxed{{\sigma_{{eq}} = {_v(d.sigma_eq, 3)}\ \text{{MPa}}}}\]",
+        "<p><b>3. Relação de tensões</b> (a tensão tabelada vale para o eixo-padrão "
+        f"de {_v(d.carga_padrao)} tf; escala com a carga elevada a 0,94 — IPR-714 §4.6.2.3.3):</p>",
         rf"\[SR = \frac{{\sigma_{{eq}}}}{{f_{{ctk}}}}\left(\frac{{P_{{ef}}}}{{P_{{pad}}}}\right)^{{0{{,}}94}}"
         rf" = \frac{{{_v(d.sigma_eq, 3)}}}{{{_v(d.mr)}}}"
         rf"\left(\frac{{{_v(d.carga_efetiva)}}}{{{_v(d.carga_padrao)}}}\right)^{{0{{,}}94}} = {_v(d.sr, 3)}\]",
@@ -878,16 +948,71 @@ def _memoria_faixa_html(d, fsc: float) -> str:
     if d.n_adm_fadiga >= 1e19:
         partes.append(rf"\[SR = {_v(d.sr, 3)} < 0{{,}}45 \Rightarrow N_f = \text{{ilimitado}}\]")
     elif d.sr < 0.55:
-        partes.append(rf"\[N_f = \left(\frac{{4{{,}}2577}}{{SR - 0{{,}}4325}}\right)^{{3{{,}}268}} = {_bignum(d.n_adm_fadiga)}\]")
+        partes.append(
+            rf"\[0{{,}}45 \le SR < 0{{,}}55 \Rightarrow "
+            rf"N_f = \left(\frac{{4{{,}}2577}}{{SR - 0{{,}}4325}}\right)^{{3{{,}}268}}"
+            rf" = \left(\frac{{4{{,}}2577}}{{{_v(d.sr, 3)} - 0{{,}}4325}}\right)^{{3{{,}}268}}"
+            rf" = {_bignum(d.n_adm_fadiga)}\]")
     else:
-        partes.append(rf"\[\log_{{10}} N_f = 11{{,}}737 - 12{{,}}077\,SR \Rightarrow N_f = {_bignum(d.n_adm_fadiga)}\]")
+        partes.append(
+            rf"\[SR \ge 0{{,}}55 \Rightarrow \log_{{10}} N_f = 11{{,}}737 - 12{{,}}077\times{_v(d.sr, 3)}"
+            rf" = {_v(11.737 - 12.077 * d.sr, 3)} \Rightarrow N_f = {_bignum(d.n_adm_fadiga)}\]")
     partes += [
         "<p><b>5. Consumo de fadiga:</b></p>",
-        rf"\[CF = \frac{{N_{{prev}}}}{{N_f}}\times 100 = {_v(d.consumo_fadiga_pct)}\%\]",
-        "<p><b>6. Erosão</b> (fator de erosão dos Quadros 16–23; repetições pelo ábaco Fig. 28/29):</p>",
-        rf"\[FE = {_v(d.fator_erosao, 3)} \qquad N_e = {_bignum(d.n_adm_erosao)}\]",
-        "<p><b>7. Consumo de erosão:</b></p>",
-        rf"\[CE = \frac{{N_{{prev}}}}{{N_e}}\times 100 = {_v(d.consumo_erosao_pct)}\%\]",
+        rf"\[CF = \frac{{N_{{prev}}}}{{N_f}}\times 100 = "
+        rf"\frac{{{_bignum(d.faixa.repeticoes_previstas)}}}{{{_bignum(d.n_adm_fadiga)}}}"
+        rf"\times 100 = {_v(d.consumo_fadiga_pct)}\%\]",
+    ]
+
+    # --- 6. Erosao: quadro usado + interpolacao + equacao de Packard por extenso ---
+    tbl_e, kx_e, col_e = c._EROSAO[(p.acostamento, p.com_barras_transferencia, d.faixa.eixo)]
+    det_e = tabp.consultar_detalhado(tbl_e, kx_e, h_cm, p.k_mpa_m, col_e)
+    partes += [
+        f"<p><b>6. Fator de erosão</b> — {_NOME_QUADRO.get(id(tbl_e), 'Quadros 16–23')} "
+        f"(IPR-714), mesma interpolação bilinear:</p>",
+        _interp_html(det_e, "FE", h_cm, p.k_mpa_m, dec=2),
+        rf"\[\boxed{{FE = {_v(d.fator_erosao, 3)}}}\]",
+        "<p><b>7. Repetições admissíveis — erosão</b> (leitura direta da "
+        "Figura 28/29 digitalizada — nomograma de 3 escalas: carga | fator de "
+        "erosão | N admissível; a reta que liga carga e FE é estendida até a "
+        "escala de N):</p>",
+    ]
+    com_ac = p.acostamento == c.TipoAcostamento.COM_CONCRETO
+    nomo = c._NOMO[p.acostamento]
+    divisor = c._CARGA_DIVISOR_EROSAO[d.faixa.eixo]
+    carga_equiv = min(max(d.carga_efetiva / divisor, nomo["carga_min"]), nomo["carga_max"])
+    ef = min(max(d.fator_erosao, nomo["ef_min"]), nomo["ef_max"])
+    p1 = nomo["a1"] + nomo["b1"] * math.log(carga_equiv)
+    p2 = nomo["a2"] + nomo["b2"] * ef
+    p3 = p1 + (p2 - p1) * nomo["w"] + nomo["offset"]
+    divisor_txt = "" if divisor == 1.0 else rf" \div {_v(divisor,0)}"
+    fig = "28 (sem acostamento)" if not com_ac else "29 (com acostamento)"
+    partes.append(
+        rf"\[\text{{Figura {fig}}}\]"
+        rf"\[P_{{ef}}{divisor_txt} = {_v(carga_equiv, 3)}\ \text{{tf (escala de carga)}}"
+        rf" \qquad FE = {_v(ef, 3)}\ \text{{(escala do fator de erosão)}}\]"
+        rf"\[\text{{reta carga}}\to\text{{FE, estendida até a escala de N}}"
+        rf" \;(w={_v(nomo['w'],3)})\]")
+    a3, b3, c3 = nomo["a3"], nomo["b3"], nomo["c3"]
+    if c3 == 0.0:
+        log_ne_calc = (p3 - a3) / b3
+    else:
+        disc = b3 * b3 - 4 * c3 * (a3 - p3)
+        log_ne_calc = None if disc < 0 else max(
+            (-b3 + disc ** 0.5) / (2 * c3), (-b3 - disc ** 0.5) / (2 * c3))
+    if d.n_adm_erosao >= c.N_ILIMITADO:
+        partes.append(
+            rf"\[\text{{reta cruza acima do topo impresso da escala (10}}^8"
+            rf"\text{{)}} \Rightarrow N_e = \text{{ilimitado}}\]")
+    else:
+        partes.append(
+            rf"\[\log_{{10}} N_e \approx {_v(log_ne_calc, 3) if log_ne_calc else '-'}"
+            rf" \Rightarrow N_e = {_bignum(d.n_adm_erosao)}\]")
+    partes += [
+        "<p><b>8. Consumo de erosão:</b></p>",
+        rf"\[CE = \frac{{N_{{prev}}}}{{N_e}}\times 100 = "
+        rf"\frac{{{_bignum(d.faixa.repeticoes_previstas)}}}{{{_bignum(d.n_adm_erosao)}}}"
+        rf"\times 100 = {_v(d.consumo_erosao_pct)}\%\]",
     ]
     return "".join(partes)
 
@@ -923,7 +1048,7 @@ def _painel_falha_h(s: dict, refresh, p: c.ParametrosProjeto) -> None:
                f"fadiga {_v(d.consumo_fadiga_pct)}% / erosão {_v(d.consumo_erosao_pct)}%"
                .replace(",", "."))
         with ui.expansion(rot).classes("w-full"):
-            ui.html(_memoria_faixa_html(d, p.fsc))
+            ui.html(_memoria_faixa_html(d, p, c.H_MAX_CM))
     ung.mathjax_typeset()
 
     # atalhos: repetir as etapas que alimentam o dimensionamento
@@ -966,17 +1091,95 @@ def render_memoria(s: dict, refresh) -> bool:
         ba = s.get("barras", "Sem")
         ui.label(f"Premissas: fctk = {_v(p.fctk_mpa, 1)} MPa · k = {p.k_mpa_m:.0f} MPa/m · "
                  f"FSC = {_v(p.fsc)} · acostamento {ac} · barras {ba}.").classes("text-sm")
-        ui.label("Critério: testa-se h de 10 a 40 cm e adota-se a menor espessura cujo "
-                 "consumo de fadiga e de erosão fique ≤ 100%.").classes("text-sm text-slate-500")
+
+        # --- 0. Fundacao: de onde vem o k do sistema ---
+        if s.get("k0"):
+            with ui.expansion("🏔️ 0. Fundação — como o k do sistema foi obtido").classes("w-full"):
+                k0 = float(s.get("k0", 50.0))
+                tipo_sb = s.get("tipo_sb", "Sem sub-base")
+                esp_sb = s.get("esp_sb", 0)
+                kef = float(s.get("k_efetivo", k0))
+                html = [
+                    f"<p><b>k0 do subleito</b> = {_v(k0, 0)} MPa/m "
+                    "(CBR → k0 pela Figura 11 ou solo → k0 pelo Quadro 3 do IPR-714, "
+                    "conforme escolhido na etapa Fundação).</p>",
+                ]
+                if tipo_sb and tipo_sb != "Sem sub-base":
+                    html.append(
+                        f"<p><b>Sub-base:</b> {tipo_sb}, {esp_sb:g} cm → interpolação "
+                        "bilinear (k0 × espessura) no ábaco correspondente "
+                        "(Figs. 18–21 do IPR-714):</p>"
+                        rf"\[k_0 = {_v(k0, 0)} \xrightarrow{{\ \text{{{tipo_sb}, {esp_sb:g} cm}}\ }} "
+                        rf"k_{{ef}} = {_v(kef, 0)}\ \text{{MPa/m}}\]")
+                    if kef >= e3.K_MAX_TOPO_SUBBASE - 1e-9:
+                        html.append("<p class='text-xs' style='color:#b45309'>k limitado ao teto "
+                                    f"de {e3.K_MAX_TOPO_SUBBASE:g} MPa/m do IPR-714.</p>")
+                else:
+                    html.append(rf"<p>Sem sub-base → \(k_{{ef}} = k_0 = {_v(kef, 0)}\) MPa/m.</p>")
+                ui.html("".join(html))
+
+        # --- 0b. Espectro de trafego usado (com a majoracao pelo FSC) ---
+        with ui.expansion(f"🚚 0b. Espectro de tráfego ({len(p.espectro)} faixas) e "
+                          "majoração pelo FSC").classes("w-full"):
+            ui.label(f"Cada carga do espectro é multiplicada pelo FSC = {_v(p.fsc)} "
+                     "(Quadro 9); tandem triplo entra no ábaco de eixo simples com 1/3 da carga.") \
+                .classes("text-xs text-slate-500")
+            linhas_esp = []
+            for fx in p.espectro:
+                pef = c._carga_efetiva(fx, p.fsc)
+                linhas_esp.append({
+                    "eixo": _EIXO_LABEL.get(fx.eixo.value, fx.eixo.value),
+                    "carga": _v(fx.carga_tf, 1),
+                    "pef": _v(pef, 2),
+                    "n": f"{fx.repeticoes_previstas:,.0f}".replace(",", "."),
+                })
+            ui.table(rows=linhas_esp, columns=[
+                {"name": "eixo", "label": "Eixo", "field": "eixo", "align": "left"},
+                {"name": "carga", "label": "Carga (tf)", "field": "carga"},
+                {"name": "pef", "label": "P_ef = carga × FSC (tf)", "field": "pef"},
+                {"name": "n", "label": "N previsto", "field": "n"},
+            ], pagination=8).classes("w-full")
+
+        ui.label("Critério: testa-se h de 10 a 40 cm (passo 0,5) e adota-se a menor espessura "
+                 "cujo consumo de fadiga E de erosão fique ≤ 100%.").classes("text-sm text-slate-500")
+
+        # --- Busca iterativa da espessura (o loop, demonstrado) ---
+        with ui.expansion(f"🔁 Busca iterativa: h = {c.H_MIN_CM:g} → {res.h_cm:g} cm").classes("w-full"):
+            ui.label("Cada linha é uma espessura-tentativa verificada contra o espectro "
+                     "inteiro; a primeira que passa nos dois critérios é adotada.") \
+                .classes("text-xs text-slate-500")
+            linhas_h = []
+            h_it = c.H_MIN_CM
+            while h_it <= res.h_cm + 1e-9:
+                r_it = c.verificar_espessura(h_it, p)
+                linhas_h.append({
+                    "h": _v(h_it, 1),
+                    "cf": _v(r_it.soma_fadiga_pct, 1) + " %",
+                    "ce": _v(r_it.soma_erosao_pct, 1) + " %",
+                    "st": "✅ aprovada" if r_it.aprovada else
+                          ("✗ erosão" if r_it.soma_erosao_pct > 100 else "✗ fadiga"),
+                })
+                h_it += c.H_PASSO_CM
+            ui.table(rows=linhas_h, columns=[
+                {"name": "h", "label": "h (cm)", "field": "h"},
+                {"name": "cf", "label": "Σ fadiga", "field": "cf"},
+                {"name": "ce", "label": "Σ erosão", "field": "ce"},
+                {"name": "st", "label": "Verificação", "field": "st"},
+            ], pagination=10).classes("w-full")
+
         ui.label(f"Espessura adotada: h = {res.h_cm:.1f} cm").classes("text-green-700 font-bold mt-1")
         ui.separator()
-        ui.label(f"Verificação de h = {res.h_cm:.1f} cm, por classe de eixo").classes("font-bold")
+        ui.label(f"Verificação de h = {res.h_cm:.1f} cm, por classe de eixo — conta completa") \
+            .classes("font-bold")
+        ui.label("Abra cada faixa para ver TODAS as etapas: quadro consultado, interpolação "
+                 "bilinear célula a célula, SR, equações de fadiga e de erosão com os valores "
+                 "substituídos.").classes("text-xs text-slate-500")
         for d in res.detalhes:
             rot = (f"{_EIXO_LABEL.get(d.faixa.eixo.value, d.faixa.eixo.value)} · {_v(d.faixa.carga_tf, 1)} tf · "
                    f"{d.faixa.repeticoes_previstas:,.0f} rep. → fadiga {_v(d.consumo_fadiga_pct)}% / "
                    f"erosão {_v(d.consumo_erosao_pct)}%".replace(",", "."))
             with ui.expansion(rot).classes("w-full"):
-                ui.html(_memoria_faixa_html(d, p.fsc))
+                ui.html(_memoria_faixa_html(d, p, res.h_cm))
         ung.mathjax_typeset()
         ui.separator()
         ui.label(f"Somatório — fadiga: Σ CF = {_v(res.soma_fadiga_pct, 1)}% · "
