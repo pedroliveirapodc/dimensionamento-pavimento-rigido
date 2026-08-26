@@ -120,15 +120,42 @@ VEICULOS: dict[str, VeiculoDNIT] = {
 
 
 # ---------------------------------------------------------------
-# Conversao FROTA -> ESPECTRO de eixos (list[FaixaCarga])
-# ---------------------------------------------------------------
+# FATOR DE CARGA (carregamento da frota) — Bloco A, pedido da orientadora
+# (23/08/2026): "Deveria entrar com fator de carga e fator de eixo."
+#
+# "Fator de eixo" = numero de eixos de cada tipo por veiculo — ja e dado
+# RIGOROSO aqui (a tupla `eixos` de cada VeiculoDNIT, Figura 13 do IPR-723).
+#
+# "Fator de carga" = o quanto os eixos realmente carregam em relacao ao
+# LIMITE LEGAL (CM_*). Ate esta sessao, o app assumia SEMPRE 100% do limite
+# legal (todo caminhao "no talo") — conservador, mas nao reflete a pratica
+# (parte da frota roda vazia ou parcialmente carregada; ver DNIT, "A
+# Importancia das Contagens de Trafego...", que separa "classificacao da
+# frota" de "carregamento da frota" como duas etapas distintas do estudo).
+# A fonte RIGOROSA para o carregamento real e pesquisa de carga em posto de
+# pesagem — que este projeto nao tem. Por isso o fator abaixo e um parametro
+# EXPLICITO e AJUSTAVEL (nao mais implicito em "sempre 100%"), com o default
+# mantendo o comportamento conservador anterior (citavel, lado da seguranca).
+FATOR_CARGA_PADRAO = 1.0  # 1,0 = 100% do limite legal (default conservador)
+
+
 def espectro_de_frota(frota: dict[str, float],
-                      ignorar_leves: bool = True) -> list[FaixaCarga]:
+                      ignorar_leves: bool = True,
+                      fator_carga: float = FATOR_CARGA_PADRAO) -> list[FaixaCarga]:
     """
     Converte uma frota {codigo_classe: n_veiculos} no espectro de eixos.
 
     Cada veiculo contribui com seus eixos; agregamos por (tipo de eixo, carga)
     somando as repeticoes. Leves sao ignorados por padrao (consumo ~0).
+
+    fator_carga: fracao do limite legal (CM_*) que os eixos realmente
+    carregam, em media (1,0 = 100%, default). Aplicado a TODOS os eixos
+    igualmente -- e uma aproximacao de UM parametro (desloca o nivel de
+    carga, nao reproduz uma distribuicao real vazio/parcial/cheio, que
+    exigiria dado de pesagem). Ajuste se houver contagem classificatoria ou
+    pesquisa de carga real do trecho -- nesse caso, prefira informar o
+    espectro diretamente (editar a tabela na tela de Trafego), que entra
+    100% no dimensionamento sem passar por este fator.
     """
     acumulado: dict[tuple[TipoEixo, float], float] = {}
     for codigo, n in frota.items():
@@ -138,7 +165,7 @@ def espectro_de_frota(frota: dict[str, float],
         if ignorar_leves and v.categoria == Categoria.LEVE:
             continue
         for e in v.eixos:
-            chave = (e.tipo, e.carga_tf)
+            chave = (e.tipo, e.carga_tf * fator_carga)
             acumulado[chave] = acumulado.get(chave, 0.0) + n
 
     faixas = [FaixaCarga(tipo, carga, rep)

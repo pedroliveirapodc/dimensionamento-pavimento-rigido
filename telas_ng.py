@@ -544,6 +544,24 @@ _EIXO = {"simples": c.TipoEixo.SIMPLES, "tandem_duplo": c.TipoEixo.TANDEM_DUPLO,
 _EIXO_LABEL = {"simples": "Simples", "tandem_duplo": "Tandem duplo", "tandem_triplo": "Tandem triplo"}
 
 
+def _rotulo_eixo(faixa: c.FaixaCarga) -> str:
+    """
+    Rotulo do eixo p/ exibicao — distingue eixo simples DIANTEIRO (direcional,
+    rodagem simples, ate ~6,5tf) de TRASEIRO (rodagem dupla, >6,5tf), pedido
+    da orientadora (23/08/2026, Bloco A): "sinalizar eixos simples traseiro E
+    dianteiro". O calculo (calculos.py) ja trata os dois como faixas
+    SEPARADAS do espectro (cargas diferentes = FaixaCarga diferentes) — isso
+    so melhora o RÓTULO, nao muda o resultado numerico.
+    """
+    if faixa.eixo == c.TipoEixo.SIMPLES:
+        # limite legal: 6,0tf direcional (dianteiro) / 10,0tf rodagem dupla
+        # (traseiro) -- ver veiculos_dnit.CM_ES_DIRECIONAL/CM_ESRD. Corte no
+        # meio do caminho (6,5tf) para tambem classificar cargas intermediarias
+        # (ex.: contagem classificatoria real, nao so o limite legal exato).
+        return "Simples dianteiro" if faixa.carga_tf <= 6.5 else "Simples traseiro"
+    return _EIXO_LABEL.get(faixa.eixo.value, faixa.eixo.value)
+
+
 def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
     with ui.row().classes("w-full gap-4"):
         perfil_sel = ui.select({k: v.nome for k, v in pt.PERFIS.items()},
@@ -560,6 +578,15 @@ def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
                                  min=0.3, max=1.0, step=0.05).props("outlined dense").classes("w-40")
             ffaixa_in = ui.number("Fator de faixa", value=s.get("ffaixa", 1.0),
                                   min=0.3, max=1.0, step=0.05).props("outlined dense").classes("w-40")
+            fcarga_in = ui.number("Fator de carga (% do limite legal)",
+                                  value=s.get("fcarga", 100.0),
+                                  min=30.0, max=100.0, step=5.0).props("outlined dense").classes("w-56")
+        ui.label("Fator de carga: quanto os eixos realmente carregam em relação ao limite "
+                 "legal (6/10/17/25,5 tf). Sem pesquisa de carga (posto de pesagem) do "
+                 "trecho, mantenha 100% (conservador). Se tiver uma contagem "
+                 "classificatória real, edite a tabela abaixo diretamente — ela entra "
+                 "100% no dimensionamento, sem passar por este fator.") \
+            .classes("text-xs text-slate-400")
 
     caption = ui.label("").classes("text-xs text-slate-500")
     grid = ui.aggrid({
@@ -586,9 +613,10 @@ def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
 
     def _gerar_base():
         esp_ger = pt.espectro_de_projeto(pt.PERFIS[perfil_sel.value], float(vmda), int(periodo_in.value),
-                                         fsent_in.value, ffaixa_in.value, cresc_in.value / 100.0)
+                                         fsent_in.value, ffaixa_in.value, cresc_in.value / 100.0,
+                                         fcarga_in.value / 100.0)
         grid.options["rowData"] = [
-            {"tipo": f.eixo.value, "carga_tf": f.carga_tf, "repeticoes": round(f.repeticoes_previstas)}
+            {"tipo": f.eixo.value, "carga_tf": round(f.carga_tf, 2), "repeticoes": round(f.repeticoes_previstas)}
             for f in esp_ger]
         grid.update()
         caption.text = (f"{pt.PERFIS[perfil_sel.value].descricao} · eixos via Manual IPR-723 (Fig.13). "
@@ -606,6 +634,7 @@ def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
         s["cresc"] = cresc_in.value
         s["fsent"] = fsent_in.value
         s["ffaixa"] = ffaixa_in.value
+        s["fcarga"] = fcarga_in.value
         s["vmda"] = vmda
         total_lbl.text = f"Total de eixos solicitantes: {s['n_pesados']:,.0f}".replace(",", ".")
 
@@ -623,7 +652,7 @@ def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
         _sync()
 
     grid.on("cellValueChanged", _on_cell_changed)
-    for w in (perfil_sel, periodo_in, cresc_in, fsent_in, ffaixa_in):
+    for w in (perfil_sel, periodo_in, cresc_in, fsent_in, ffaixa_in, fcarga_in):
         w.on_value_change(lambda _: _gerar_base())
 
     _gerar_base()
@@ -643,11 +672,19 @@ def render_trafego(s: dict, refresh) -> bool:
             ui.label("💡 Pré-definido pela rodovia escolhida no início.").classes("text-xs text-amber-700")
             return _trafego_comum(s, refresh, sel["vmda"])
 
+        # ENXUGAMENTO/Bloco A (23/08/2026, pedido da orientadora): o posto do
+        # PNCT so deveria ser sugerido quando NAO ha dado do local, e por
+        # ultimo na hierarquia -- nao como opcao padrao. "Digitar" (que cobre
+        # tanto VMDa estimado quanto CONTAGEM CLASSIFICATORIA real, editando
+        # a tabela abaixo) passou a ser a opcao 1 e o default; o posto PNCT
+        # virou a opcao 2, rotulada explicitamente como recurso de ultimo caso.
         ung.pergunta("Quanto tráfego pesado a via recebe?",
-                    "Escolha a rodovia no mapa (volume real de um posto do PNCT/DNIT) ou "
-                    "informe o VMDa manualmente.")
-        modo_traf = ui.toggle(["📍 Marcar no mapa (PNCT)", "✏️ Digitar manualmente"],
-                              value=s.get("traf_modo_lbl", "📍 Marcar no mapa (PNCT)"))
+                    "Informe o VMDa (ou uma contagem classificatória real, editando a "
+                    "tabela abaixo). Só use o posto do PNCT/DNIT se não tiver dado do "
+                    "trecho.")
+        modo_traf = ui.toggle(["✏️ Digitar (VMDa ou contagem real)",
+                               "📍 Sem dado do local: usar posto do PNCT"],
+                              value=s.get("traf_modo_lbl", "✏️ Digitar (VMDa ou contagem real)"))
         corpo = ui.column().classes("w-full gap-2")
 
         def _rebuild():
@@ -694,6 +731,10 @@ def render_trafego(s: dict, refresh) -> bool:
                 else:
                     vmda_in = ui.number("VMDa (veíc/dia)", value=s.get("vmda_man", 8000),
                                        min=100, max=300_000, step=100).props("outlined dense").classes("w-56")
+                    ui.label("Tem uma contagem classificatória real do trecho (feita antes de "
+                             "pavimentar)? Prefira editar a tabela de eixos diretamente, faixa "
+                             "a faixa, abaixo — ela entra 100% no dimensionamento, sem passar "
+                             "pelo perfil-tipo nem pelo fator de carga.").classes("text-xs text-slate-400")
 
                     def _upd(e):
                         s["vmda_man"] = e.value
@@ -1044,7 +1085,7 @@ def _painel_falha_h(s: dict, refresh, p: c.ParametrosProjeto) -> None:
     ui.label(f"O critério que governa a falha é a {governa}. Veja a conta por "
              "classe de eixo:").classes("text-sm text-slate-600")
     for d in diag.detalhes:
-        rot = (f"{_EIXO_LABEL.get(d.faixa.eixo.value, d.faixa.eixo.value)} · "
+        rot = (f"{_rotulo_eixo(d.faixa)} · "
                f"{_v(d.faixa.carga_tf, 1)} tf · {d.faixa.repeticoes_previstas:,.0f} rep. → "
                f"fadiga {_v(d.consumo_fadiga_pct)}% / erosão {_v(d.consumo_erosao_pct)}%"
                .replace(",", "."))
@@ -1129,7 +1170,7 @@ def render_memoria(s: dict, refresh) -> bool:
             for fx in p.espectro:
                 pef = c._carga_efetiva(fx, p.fsc)
                 linhas_esp.append({
-                    "eixo": _EIXO_LABEL.get(fx.eixo.value, fx.eixo.value),
+                    "eixo": _rotulo_eixo(fx),
                     "carga": _v(fx.carga_tf, 1),
                     "pef": _v(pef, 2),
                     "n": f"{fx.repeticoes_previstas:,.0f}".replace(",", "."),
@@ -1176,7 +1217,7 @@ def render_memoria(s: dict, refresh) -> bool:
                  "bilinear célula a célula, SR, equações de fadiga e de erosão com os valores "
                  "substituídos.").classes("text-xs text-slate-500")
         for d in res.detalhes:
-            rot = (f"{_EIXO_LABEL.get(d.faixa.eixo.value, d.faixa.eixo.value)} · {_v(d.faixa.carga_tf, 1)} tf · "
+            rot = (f"{_rotulo_eixo(d.faixa)} · {_v(d.faixa.carga_tf, 1)} tf · "
                    f"{d.faixa.repeticoes_previstas:,.0f} rep. → fadiga {_v(d.consumo_fadiga_pct)}% / "
                    f"erosão {_v(d.consumo_erosao_pct)}%".replace(",", "."))
             with ui.expansion(rot).classes("w-full"):

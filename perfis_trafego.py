@@ -67,7 +67,8 @@ def espectro_de_projeto(perfil: PerfilTrafego, vmda: float,
                         periodo_anos: int = 20,
                         fator_sentido: float = 0.5,
                         fator_faixa: float = 1.0,
-                        taxa_crescimento: float = 0.0) -> list[FaixaCarga]:
+                        taxa_crescimento: float = 0.0,
+                        fator_carga: float = vd.FATOR_CARGA_PADRAO) -> list[FaixaCarga]:
     """
     Espectro de eixos para TODO o periodo de projeto.
 
@@ -76,7 +77,10 @@ def espectro_de_projeto(perfil: PerfilTrafego, vmda: float,
       - fator_faixa (Ff): fracao na faixa de projeto (1,0 = pista de 1 faixa por sentido)
       - taxa_crescimento (g): se >0, aplica fator de periodo de juros compostos
             Fc = ((1+g)^periodo - 1) / g ; senao Fc = periodo (linear)
-    A conversao classe -> eixos usa veiculos_dnit (Manual IPR-723).
+    A conversao classe -> eixos usa veiculos_dnit (Manual IPR-723) -- "fator
+    de eixo" (numero de eixos por veiculo, rigoroso). "Fator de carga"
+    (carregamento em relacao ao limite legal, ver veiculos_dnit) e repassado
+    direto a espectro_de_frota; default 1,0 mantem o comportamento anterior.
     """
     if taxa_crescimento > 0:
         g = taxa_crescimento
@@ -87,7 +91,7 @@ def espectro_de_projeto(perfil: PerfilTrafego, vmda: float,
     veic_dia = frota_diaria(perfil, vmda)
     fator = 365.0 * fator_periodo * fator_sentido * fator_faixa
     frota_total = {c: n * fator for c, n in veic_dia.items()}
-    return vd.espectro_de_frota(frota_total)
+    return vd.espectro_de_frota(frota_total, fator_carga=fator_carga)
 
 
 if __name__ == "__main__":
