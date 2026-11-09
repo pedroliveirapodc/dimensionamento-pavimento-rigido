@@ -46,6 +46,22 @@ CONSUMO_MAXIMO = 100.0
 # "Infinito" pratico para repeticoes admissiveis ilimitadas (fadiga, SR baixo)
 N_ILIMITADO = 1e20
 
+# Corte de "ilimitado" na leitura da Figura 28 (09/11/2026).
+# O manual (Quadros 11 e 24, exemplo da PCA) e a planilha de calculo de um
+# professor da disciplina tratam como ILIMITADAS as faixas de eixo simples de
+# 6 e 7 tf (7,2 e 8,4 tf majoradas). Isso nao sai do desenho: a escala de N da
+# Figura 28 e comprimida no topo (decada 10^7-10^8 com ~60% da altura das
+# demais) porque representa a equacao de erosao da PCA, em que N tende a
+# infinito a partir de um nivel fixo de "potencia" -- ou seja, a partir de uma
+# POSICAO fixa no eixo de N, qualquer que seja a carga ou o fator de erosao.
+# A leitura digitalizada (escala log-linear) da 42 a 150 milhoes nessas faixas.
+# Calibracao contra os pontos oficiais: o maior N FINITO do manual e lido pelo
+# modelo como 10^7,38 e o menor ILIMITADO como 10^7,62; o corte em 10^7,5
+# (~32 milhoes) separa todos. A Figura 29 nao tem ponto oficial para calibrar
+# e mantem o corte antigo no topo impresso da escala (10^8,3), conservador.
+LOG_N_ILIMITADO_FIG28 = 7.5
+LOG_N_ILIMITADO_FIG29 = 8.3
+
 # fctk FIXO (23/08/2026, pedido da orientadora): o app deixa de expor fctk como
 # campo editavel -- usa sempre o valor do proprio exemplo do manual (pag.115).
 # Historico: antes era ui.number editavel (3,0-6,0 MPa) em telas_ng.render_concreto.
@@ -184,7 +200,7 @@ def tensao_equivalente(h_cm: float, k_mpa_m: float, eixo: TipoEixo,
     if chave not in _TENSAO:
         raise NotImplementedError(
             f"Tabela de tensao equivalente nao disponivel para {chave} "
-            f"(Quadro 14 PCAC ES/ETD ainda nao transcrito)."
+            f"(combinacao fora dos Quadros 12-15)."
         )
     tabela, eixo_k, col = _TENSAO[chave]
     return tab.consultar(tabela, eixo_k, h_cm, k_mpa_m, indice_coluna=col)
@@ -197,7 +213,7 @@ def fator_erosao(h_cm: float, k_mpa_m: float, eixo: TipoEixo,
     if chave not in _EROSAO:
         raise NotImplementedError(
             f"Tabela de fator de erosao nao disponivel para {chave} "
-            f"(Quadros 16,18-23 ainda nao transcritos)."
+            f"(combinacao fora dos Quadros 16-23)."
         )
     tabela, eixo_k, col = _EROSAO[chave]
     return tab.consultar(tabela, eixo_k, h_cm, k_mpa_m, indice_coluna=col)
@@ -308,7 +324,9 @@ def _ler_nomograma(carga_equiv_tf: float, fator_eros: float,
                       if 2.0 <= l <= 9.0]
         log_n = candidatos[0] if candidatos else max((-b3 + raiz) / (2 * c3),
                                                        (-b3 - raiz) / (2 * c3))
-    if log_n > 8.3:   # acima do topo impresso da escala (10^8)
+    corte = (LOG_N_ILIMITADO_FIG28 if acostamento == TipoAcostamento.SEM_CONCRETO
+             else LOG_N_ILIMITADO_FIG29)
+    if log_n > corte:   # N ilimitado (ver nota no topo do modulo)
         return N_ILIMITADO
     return 10.0 ** log_n
 

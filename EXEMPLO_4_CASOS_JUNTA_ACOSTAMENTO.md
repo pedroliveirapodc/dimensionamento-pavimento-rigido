@@ -35,12 +35,17 @@ diretamente a transferência de carga entre placas e, com isso, o bombeamento na
 | **3** | com barras (JCP) | sem concreto (PSAC) | 12 / 13 (pág. 101–102) | **20 / 21** (pág. 109–110) |
 | **4** | com barras (JCP) | com concreto (PCAC) | 14 / 15 (pág. 103–104) | 22 / 23 (pág. 111–112) |
 
-> **Nota (achado da auditoria de 23/08/2026):** os títulos IMPRESSOS dos Quadros 20 e 21
-> no manual estão errados — dizem "JSP e PCAC", o que contradiz o próprio parêntese
-> explicativo do título ("pavimento SEM acostamento") e duplica o título dos Quadros
-> 18/19. Pelo padrão da sequência (16/17→18/19→**20/21**→22/23) e pela conferência dos
-> valores tabelados (diferentes dos de 18/19), o nome correto é **JCP-PSAC** — como usado
-> nesta tabela e como o código já rotula. Vale citar como errata do manual no TCC.
+> **Nota (errata do manual; auditoria de 23/08/2026, revista em 09/11/2026):** os títulos
+> IMPRESSOS dos Quadros 20 a 23 no manual estão errados: todos dizem "JSP e PCAC" (junta
+> sem barras). Nos Quadros 20/21 isso contradiz o próprio parêntese do título ("pavimento
+> SEM acostamento"); os Quadros 22/23 repetem integralmente o título dos Quadros 18/19.
+> A configuração correta está na relação de quadros do próprio manual, no texto do método
+> (seção 4.6.2): **20/21 = JCP-PSAC** (com barras, sem acostamento) e **22/23 = JCP-PCAC**
+> (com barras, com acostamento), como usado nesta tabela e como o código rotula. Os
+> valores confirmam: com barras o fator de erosão é sempre menor (h=25, k=100, ES:
+> Q16 2,72 → Q20 2,51; Q18 2,31 → Q22 2,08). A planilha de cálculo de um professor da
+> disciplina adota a mesma organização (16/17 e 20/21 "sem acostamento"; 18/19 e 22/23
+> "com acostamento"). Citado como errata do manual no TCC (seção 5.2).
 
 ---
 

@@ -13,9 +13,16 @@ h vai de 12 a 34 cm em todos os quadros.
 >>> STATUS DE TRANSCRICAO <<<
   [OK ] Quadro 12 - Tensao equiv. ES/ETD - PSAC   (validado vs exemplo do manual)
   [OK ] Quadro 13 - Tensao equiv. ETT    - PSAC   (validado vs exemplo: 0,727)
+  [OK ] Quadro 14 - Tensao equiv. ES/ETD - PCAC   (_tabelas_geradas.py)
   [OK ] Quadro 15 - Tensao equiv. ETT    - PCAC
-  [TODO] Quadro 14 - Tensao equiv. ES/ETD - PCAC
-  [TODO] Quadros 16-23 - Fatores de erosao (8 tabelas)
+  [OK ] Quadros 16-23 - Fatores de erosao (8 tabelas; 18-23 em _tabelas_geradas.py)
+
+ERRATA DO MANUAL (titulos dos Quadros 20-23): os titulos impressos dizem todos
+"JSP e PCAC" (junta sem barras). A configuracao correta, dada pela relacao de
+quadros no texto do metodo (IPR-714, 4.6.2), e a usada nos nomes abaixo:
+  Q16/17 = JSP-PSAC   Q18/19 = JSP-PCAC   Q20/21 = JCP-PSAC   Q22/23 = JCP-PCAC
+(JSP/JCP = junta sem/com barras de transferencia; PSAC/PCAC = sem/com
+acostamento de concreto). Com barras o fator de erosao e sempre menor.
 
 Celulas corrigidas por erro de OCR (CONFERIR no PDF, p.101-104):
   - Q12 h=13 k=20 ETD: OCR "2,33" -> corrigido 3,33 (monotonicidade)
