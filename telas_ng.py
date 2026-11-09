@@ -11,6 +11,7 @@ usado pela versao Streamlit, sem nenhuma alteracao.
 """
 from __future__ import annotations
 
+import re
 import csv
 import json
 import math
@@ -190,7 +191,9 @@ def render_modo(s: dict, refresh) -> bool:
         ung.pergunta("Como você quer montar o projeto?",
                     "A escolha vale para todas as etapas — dados pré-definidos ficam "
                     "sempre marcados com a origem e podem ser ajustados.")
-        atual = s.get("modo_projeto", "rodovia")
+        # grava o padrao exibido: antes so era gravado ao clicar, e as etapas
+        # seguintes liam o padrao como "manual" (VMDa do posto era ignorado)
+        atual = s.setdefault("modo_projeto", "rodovia")
 
         def _set(modo):
             s["modo_projeto"] = modo
@@ -212,6 +215,17 @@ def render_modo(s: dict, refresh) -> bool:
             ui.label("Cobertura dos dados automáticos: Estado do RJ "
                      "(PNCT, EMBRAPA, NASA POWER, SICRO).").classes("text-xs text-slate-400 mt-1")
     return True
+
+
+def _local_relatorio(s: dict) -> str | None:
+    """Local para o relatorio: municipio (se houver) + coordenada em formato BR."""
+    pto = s.get("ponto_obra")
+    coord = (f"lat. {pto[0]:.4f}; long. {pto[1]:.4f}".replace(".", ",")
+             .replace("lat,", "lat.").replace("long,", "long.")) if pto else None
+    mun = s.get("municipio")
+    if mun and not str(mun).strip().lower().startswith("ponto"):
+        return f"{mun} ({coord})" if coord else str(mun)
+    return coord
 
 
 def _n_estimado(s: dict) -> float | None:
@@ -466,7 +480,7 @@ def render_subbase(s: dict, refresh) -> bool:
         # pre-selecao pelo local (modos rodovia/local): tipo RECOMENDADO por
         # trafego (N estimado) + subleito (k0) — sugestao, sempre editavel
         rec_sb = None
-        modo_proj = s.get("modo_projeto", "manual")
+        modo_proj = s.get("modo_projeto", "rodovia")
         if modo_proj in ("rodovia", "local") and s.get("k0"):
             n_est = _n_estimado(s)
             if n_est:
@@ -490,8 +504,7 @@ def render_subbase(s: dict, refresh) -> bool:
             if tipo_sel.value == rec_sb.tipo_recomendado:
                 sugestao.text = (f"💡 Pré-selecionada {origem}: {rec_sb.tipo_recomendado} — "
                                  f"tráfego {rec_sb.nivel_trafego} + subleito {rec_sb.nivel_subleito} "
-                                 f"(k0 ≈ {s.get('k0', 50):.0f} MPa/m). Ajuste se quiser; "
-                                 "custos comparados no Resultado.")
+                                 f"(k0 ≈ {s.get('k0', 50):.0f} MPa/m). Ajuste se quiser.")
             else:
                 sugestao.text = (f"Sugerida {origem}: {rec_sb.tipo_recomendado} "
                                  f"(tráfego {rec_sb.nivel_trafego} + subleito "
@@ -507,9 +520,12 @@ def render_subbase(s: dict, refresh) -> bool:
             esp = 0.0
             esp_row.clear()
             if e3.TIPOS_SUBBASE[tipo] is not None:
+                # espessura herdada de "Sem sub-base" e 0: usar 15 cm (padrao)
+                if not s.get("esp_sb") or s["esp_sb"] < 10:
+                    s["esp_sb"] = 15
                 with esp_row:
                     esp_slider = ui.slider(min=10, max=30, step=1, value=s.get("esp_sb", 15)) \
-                        .props("label-always").classes("w-80")
+                        .props("label-always").classes("w-80 mt-10")
                     esp_lbl = ui.label(f"{esp_slider.value:.0f} cm").classes("text-sm")
 
                     def _upd(e):
@@ -661,7 +677,7 @@ def _trafego_comum(s: dict, refresh, vmda: float) -> bool:
 
 def render_trafego(s: dict, refresh) -> bool:
     with ui.column().classes("w-full max-w-3xl mx-auto cartao p-8 gap-3 aparecer"):
-        modo_proj = s.get("modo_projeto", "manual")
+        modo_proj = s.get("modo_projeto", "rodovia")
         if modo_proj == "rodovia" and s.get("posto_sel"):
             sel = s["posto_sel"]
             ung.pergunta("Confirme o tráfego do trecho",
@@ -883,6 +899,19 @@ def _v(x, dec=2):
     return f"{x:.{dec}f}".replace(".", ",")
 
 
+def _milhar(n):
+    """Inteiro com ponto de milhar (5.099.997), sem mexer na virgula decimal."""
+    return f"{n:,.0f}".replace(",", ".")
+
+
+def _virgula_tex(html):
+    """Dentro das formulas \\[...\\], troca 0,563 por 0{,}563: no TeX a virgula
+    vira pontuacao e ganha espaco depois ('0, 563'); entre chaves, nao."""
+    return re.sub(r"\\\[(.*?)\\\]",
+                  lambda m: re.sub(r"(\d),(\d)", r"\1{,}\2", m.group(0)),
+                  html, flags=re.S)
+
+
 def _bignum(n):
     if n >= 1e19:
         return r"\text{ilimitado}"
@@ -1056,7 +1085,7 @@ def _memoria_faixa_html(d, p: c.ParametrosProjeto, h_cm: float) -> str:
         rf"\frac{{{_bignum(d.faixa.repeticoes_previstas)}}}{{{_bignum(d.n_adm_erosao)}}}"
         rf"\times 100 = {_v(d.consumo_erosao_pct)}\%\]",
     ]
-    return "".join(partes)
+    return _virgula_tex("".join(partes))
 
 
 def _ir_para(s: dict, refresh, tela_id: str) -> None:
@@ -1074,6 +1103,9 @@ def _painel_falha_h(s: dict, refresh, p: c.ParametrosProjeto) -> None:
     que alimentam o dimensionamento."""
     ui.label(f"Nenhuma espessura entre {c.H_MIN_CM:.0f} e {c.H_MAX_CM:.0f} cm "
              "atendeu aos critérios do PCA 1984.").classes("text-red-600 font-bold")
+    ui.label(f"Esse é o intervalo coberto pelas tabelas do IPR-714 (Quadros 12 a 23). "
+             f"Uma placa acima de {c.H_MAX_CM:.0f} cm estaria fora do domínio do método "
+             "e não é calculada por extrapolação.").classes("text-sm text-slate-600")
 
     # diagnostico calculado NA PAGINA: verificacao na espessura maxima
     diag = c.verificar_espessura(c.H_MAX_CM, p)
@@ -1086,9 +1118,8 @@ def _painel_falha_h(s: dict, refresh, p: c.ParametrosProjeto) -> None:
              "classe de eixo:").classes("text-sm text-slate-600")
     for d in diag.detalhes:
         rot = (f"{_rotulo_eixo(d.faixa)} · "
-               f"{_v(d.faixa.carga_tf, 1)} tf · {d.faixa.repeticoes_previstas:,.0f} rep. → "
-               f"fadiga {_v(d.consumo_fadiga_pct)}% / erosão {_v(d.consumo_erosao_pct)}%"
-               .replace(",", "."))
+               f"{_v(d.faixa.carga_tf, 1)} tf · {_milhar(d.faixa.repeticoes_previstas)} rep. → "
+               f"fadiga {_v(d.consumo_fadiga_pct)}% / erosão {_v(d.consumo_erosao_pct)}%")
         with ui.expansion(rot).classes("w-full"):
             ui.html(_memoria_faixa_html(d, p, c.H_MAX_CM))
     ung.mathjax_typeset()
@@ -1182,7 +1213,8 @@ def render_memoria(s: dict, refresh) -> bool:
                 {"name": "n", "label": "N previsto", "field": "n"},
             ], pagination=8).classes("w-full")
 
-        ui.label("Critério: testa-se h de 10 a 40 cm (número inteiro) e adota-se a menor espessura "
+        ui.label(f"Critério: testa-se h de {c.H_MIN_CM:.0f} a {c.H_MAX_CM:.0f} cm (número inteiro, "
+                 "intervalo das tabelas do IPR-714) e adota-se a menor espessura "
                  "cujo consumo de fadiga E de erosão fique ≤ 100%.").classes("text-sm text-slate-500")
 
         # --- Busca iterativa da espessura (o loop, demonstrado) ---
@@ -1218,8 +1250,8 @@ def render_memoria(s: dict, refresh) -> bool:
                  "substituídos.").classes("text-xs text-slate-500")
         for d in res.detalhes:
             rot = (f"{_rotulo_eixo(d.faixa)} · {_v(d.faixa.carga_tf, 1)} tf · "
-                   f"{d.faixa.repeticoes_previstas:,.0f} rep. → fadiga {_v(d.consumo_fadiga_pct)}% / "
-                   f"erosão {_v(d.consumo_erosao_pct)}%".replace(",", "."))
+                   f"{_milhar(d.faixa.repeticoes_previstas)} rep. → fadiga {_v(d.consumo_fadiga_pct)}% / "
+                   f"erosão {_v(d.consumo_erosao_pct)}%")
             with ui.expansion(rot).classes("w-full"):
                 ui.html(_memoria_faixa_html(d, p, res.h_cm))
         ung.mathjax_typeset()
@@ -1431,8 +1463,7 @@ def render_resultado(s: dict, refresh) -> bool:
                     sub = s.get("subleito")
                     rec = rsb.recomendar(s.get("n_pesados", 0), s.get("k0", 50.0))
                     ctx = rel.ContextoRelatorio(
-                        local=s.get("municipio") or (s.get("ponto_obra") and
-                              f"({s['ponto_obra'][0]:.4f}, {s['ponto_obra'][1]:.4f})"),
+                        local=_local_relatorio(s),
                         tipo_solo=((sub.ordem_sibcs + " · AASHTO " + sub.classe_aashto)
                                    if sub and sub.classe_aashto else None),
                         cbr_estimado=(sub.cbr_estimado if sub else s.get("cbr_val")),

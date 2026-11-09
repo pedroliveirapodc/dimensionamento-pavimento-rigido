@@ -28,7 +28,7 @@ ESP_REF_CM = 15.0
 # Faixas usuais de projeto rodoviario (ordens de grandeza).
 def nivel_trafego(n_eixos: float) -> tuple[int, str]:
     if n_eixos < 5e5:      return 0, "leve"
-    if n_eixos < 5e6:      return 1, "medio"
+    if n_eixos < 5e6:      return 1, "médio"
     if n_eixos < 5e7:      return 2, "pesado"
     return 3, "muito pesado"
 
@@ -36,7 +36,7 @@ def nivel_trafego(n_eixos: float) -> tuple[int, str]:
 # Qualidade do subleito por k0 (MPa/m). Indice = "fraqueza" (maior = pior).
 def nivel_subleito(k0: float) -> tuple[int, str]:
     if k0 >= 80:  return 0, "bom"
-    if k0 >= 50:  return 1, "medio"
+    if k0 >= 50:  return 1, "médio"
     if k0 >= 30:  return 2, "fraco"
     return 3, "muito fraco"
 
@@ -82,15 +82,15 @@ def recomendar(n_eixos_pesados: float, k0: float,
 
     # Justificativa textual conforme o caso.
     if exig <= 1:
-        jus = (f"Trafego {lt} e subleito {lsb}: exigencia baixa. "
-               f"Sub-base simples ja atende; foco em drenagem/regularizacao.")
+        jus = (f"Tráfego {lt} e subleito {lsb}: exigência baixa. "
+               f"Sub-base simples já atende; foco em drenagem e regularização.")
     elif exig <= 3:
-        jus = (f"Trafego {lt} / subleito {lsb}: exigencia moderada. "
-               f"Sub-base que eleve o k e de suporte uniforme.")
+        jus = (f"Tráfego {lt} e subleito {lsb}: exigência moderada. "
+               f"Sub-base que eleve o k e dê suporte uniforme.")
     else:
-        jus = (f"Trafego {lt} e/ou subleito {lsb}: exigencia alta. "
-               f"Sub-base CIMENTADA p/ elevar o k e reduzir a EROSAO (criterio "
-               f"que tende a governar em trafego pesado).")
+        jus = (f"Tráfego {lt} e/ou subleito {lsb}: exigência alta. "
+               f"Sub-base cimentada para elevar o k e reduzir a erosão (critério "
+               f"que tende a governar em tráfego pesado).")
 
     # k efetivo + custo (SICRO) de cada opcao, na espessura de referencia.
     # Eficiencia = ganho de k por R$/m3 investido (MPa/m por R$/m3) -> custo-beneficio.

@@ -32,6 +32,17 @@ _FONT_TTF_I = "C:/Windows/Fonts/ariali.ttf"
 _USE_UNICODE = True
 
 
+def _fontes_unicode() -> list[tuple[str, str, str]]:
+    """Candidatas (regular, negrito, italico), na ordem de preferencia."""
+    import os
+    cands = [(_FONT_TTF, _FONT_TTF_B, _FONT_TTF_I)]
+    ttf = os.path.join(matplotlib.get_data_path(), "fonts", "ttf")
+    cands.append((os.path.join(ttf, "DejaVuSans.ttf"),
+                  os.path.join(ttf, "DejaVuSans-Bold.ttf"),
+                  os.path.join(ttf, "DejaVuSans-Oblique.ttf")))
+    return [c for c in cands if all(os.path.exists(f) for f in c)]
+
+
 # -----------------------------------------------------------------------
 # Contexto extra (dados do session_state que nao estao em ParametrosProjeto)
 # -----------------------------------------------------------------------
@@ -98,7 +109,7 @@ def _tabela_lcca_anos(pdf: "RelatorioPDF", r: lc.ResultadoLCCA) -> None:
         pdf.ln(4.4)
     pdf._sf("I", 7)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 4.5, "O acumulado final de cada pavimento e o proprio VPL usado na comparacao.",
+    pdf.cell(0, 4.5, "O acumulado final de cada pavimento é o próprio VPL usado na comparação.",
              ln=True)
     pdf.set_text_color(*_PRETO)
 
@@ -132,11 +143,11 @@ def _grafico_curva(curva: list[c.ResultadoEspessura],
     ax.plot(hs, [min(r.soma_fadiga_pct, 200) for r in curva],
             label="Fadiga (%)", marker=".", markersize=4, linewidth=1.5, color="#1565C0")
     ax.plot(hs, [min(r.soma_erosao_pct, 200) for r in curva],
-            label="Erosao (%)", marker=".", markersize=4, linewidth=1.5, color="#E65100")
+            label="Erosão (%)", marker=".", markersize=4, linewidth=1.5, color="#E65100")
     ax.axhline(100, color="#c62828", ls="--", lw=1, label="Limite 100%")
     if h_adotado is not None:
         ax.axvline(h_adotado, color="#2e7d32", ls=":", lw=1.5,
-                   label=f"h = {h_adotado:.1f} cm")
+                   label=f"h = {h_adotado:.0f} cm")
     ax.set_xlabel("Espessura h (cm)", fontsize=9)
     ax.set_ylabel("Consumo (%)", fontsize=9)
     ax.set_ylim(0, 210)
@@ -168,14 +179,19 @@ class RelatorioPDF(FPDF):
         super().__init__(orientation="P", unit="mm", format="A4")
         self.set_auto_page_break(auto=True, margin=18)
         self.set_margins(18, 18, 18)
-        # Carrega Arial com Unicode; fallback para Helvetica se nao encontrar
-        try:
-            self.add_font("R", fname=_FONT_TTF)
-            self.add_font("R", style="B", fname=_FONT_TTF_B)
-            self.add_font("R", style="I", fname=_FONT_TTF_I)
-            self._fn = "R"
-        except Exception:
-            self._fn = "Helvetica"
+        # Fonte Unicode (acentos, Σ, ≤): Arial no Windows; em Linux/macOS, a
+        # DejaVu Sans que acompanha o matplotlib (dependencia ja instalada).
+        # Helvetica (sem acentos) so como ultimo recurso.
+        self._fn = "Helvetica"
+        for regular, negrito, italico in _fontes_unicode():
+            try:
+                self.add_font("R", fname=regular)
+                self.add_font("R", style="B", fname=negrito)
+                self.add_font("R", style="I", fname=italico)
+                self._fn = "R"
+                break
+            except Exception:
+                continue
         self.add_page()
 
     def _sf(self, style: str = "", size: int = 9):
@@ -188,7 +204,7 @@ class RelatorioPDF(FPDF):
         self.set_text_color(255, 255, 255)
         self.set_xy(18, 2.5)
         self.cell(0, 6,
-                  "Dimensionamento de Pavimento Rigido - Metodo PCA 1984 / DNIT IPR-714",
+                  "Dimensionamento de Pavimento Rígido · Método PCA/1984 · DNIT IPR-714",
                   ln=False)
         self.set_text_color(*_PRETO)
         self.ln(12)
@@ -198,7 +214,7 @@ class RelatorioPDF(FPDF):
         self._sf("I", 7)
         self.set_text_color(130, 130, 130)
         self.cell(0, 5,
-                  f"Pagina {self.page_no()} - Gerado em "
+                  f"Página {self.page_no()} · Gerado em "
                   f"{datetime.date.today().strftime('%d/%m/%Y')} | UFRJ-POLI TCC",
                   align="C")
         self.set_text_color(*_PRETO)
@@ -246,57 +262,57 @@ def gerar_pdf(
     # -- Titulo --
     pdf._sf("B", 14)
     pdf.set_text_color(*_CINZA_ESCURO)
-    pdf.cell(0, 9, "Relatorio de Dimensionamento de Pavimento Rigido",
+    pdf.cell(0, 9, "Relatório de Dimensionamento de Pavimento Rígido",
              ln=True, align="C")
     pdf._sf("", 9)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 5,
-             "Metodo PCA 1984 | Manual DNIT IPR-714 (secao 4.6.2) "
-             "| Criterio duplo: fadiga + erosao <= 100%",
+             "Método PCA/1984 | Manual DNIT IPR-714 (seção 4.6.2) "
+             "| Critério duplo: fadiga e erosão ≤ 100%",
              ln=True, align="C")
     pdf.set_text_color(*_PRETO)
 
     # -- 1. Identificacao --
-    pdf.titulo_secao("1. Identificacao")
-    pdf.linha("Data de geracao:", datetime.date.today().strftime("%d/%m/%Y"))
+    pdf.titulo_secao("1. Identificação")
+    pdf.linha("Data de geração:", datetime.date.today().strftime("%d/%m/%Y"))
     if ctx.local:
-        pdf.linha("Local / Municipio:", ctx.local)
+        pdf.linha("Local da obra:", ctx.local)
     if ctx.triagem_score is not None and ctx.triagem_score_max:
         pct = 100 * ctx.triagem_score / ctx.triagem_score_max
-        pdf.linha("Score de viabilidade:",
+        pdf.linha("Pontuação de viabilidade:",
                   f"{ctx.triagem_score:.0f}/{ctx.triagem_score_max:.0f} ({pct:.0f}%)")
 
     # -- 2. Parametros do Projeto --
-    pdf.titulo_secao("2. Parametros do Projeto")
+    pdf.titulo_secao("2. Parâmetros do Projeto")
     pdf.linha_2col(
-        "fctk (tracao na flexao):", f"{_v(param.fctk_mpa, 1)} MPa",
-        "FSC (seguranca de cargas):", f"{_v(param.fsc)}")
+        "fctk (tração na flexão):", f"{_v(param.fctk_mpa, 1)} MPa",
+        "FSC (segurança de cargas):", f"{_v(param.fsc)}")
     k_label = f"{param.k_mpa_m:.0f} MPa/m"
     if ctx.k0_subleito:
-        k_label += f"  (k0 subleito = {ctx.k0_subleito:.0f})"
+        k_label += f"  (no topo da sub-base; k0 do subleito = {ctx.k0_subleito:.0f})"
     pdf.linha("k (coef. de recalque):", k_label)
     pdf.linha_2col(
         "Acostamento de concreto:",
-        "Sim" if param.acostamento == c.TipoAcostamento.COM_CONCRETO else "Nao",
-        "Barras de transferencia:",
-        "Sim" if param.com_barras_transferencia else "Nao")
+        "Sim" if param.acostamento == c.TipoAcostamento.COM_CONCRETO else "Não",
+        "Barras de transferência:",
+        "Sim" if param.com_barras_transferencia else "Não")
     if ctx.tipo_solo:
         pdf.linha("Solo do subleito:", ctx.tipo_solo)
     if ctx.cbr_estimado is not None and ctx.k0_subleito is not None:
         pdf.linha_2col(
-            "CBR estimado:", f"{ctx.cbr_estimado} %",
+            "CBR estimado:", f"{_v(ctx.cbr_estimado, 0)} %",
             "k0 do subleito:", f"{ctx.k0_subleito:.0f} MPa/m")
     if ctx.tipo_subbase:
         esp_str = f" | {ctx.esp_subbase_cm:.0f} cm" if ctx.esp_subbase_cm else ""
-        pdf.linha("Sub-base:", ctx.tipo_subbase + esp_str)
+        pdf.linha("Sub-base adotada:", ctx.tipo_subbase + esp_str)
 
     # -- 3. Espectro de Trafego --
-    pdf.titulo_secao("3. Espectro de Trafego")
+    pdf.titulo_secao("3. Espectro de Tráfego")
     if ctx.vmda is not None:
-        periodo_str = f" | periodo {ctx.periodo_anos} anos" if ctx.periodo_anos else ""
-        pdf.linha("VMDa:", f"{ctx.vmda:,} veic/dia{periodo_str}".replace(",", "."))
+        periodo_str = f" | período de projeto de {ctx.periodo_anos} anos" if ctx.periodo_anos else ""
+        pdf.linha("VMDa:", f"{ctx.vmda:,} veíc./dia".replace(",", ".") + periodo_str)
     total_rep = sum(f.repeticoes_previstas for f in param.espectro)
-    pdf.linha("Total de repeticoes (eixos pesados):",
+    pdf.linha("Total de repetições (eixos pesados):",
               f"{total_rep:,.0f}".replace(",", "."))
     pdf.ln(1)
     _tabela_espectro(pdf, param.espectro)
@@ -306,26 +322,26 @@ def gerar_pdf(
     if resultado is None:
         pdf._sf("", 9)
         pdf.multi_cell(0, 5.5,
-                       "Nenhuma espessura entre 10 e 40 cm atendeu aos criterios "
-                       "(Sfadiga e Serosao <= 100%). Reveja os parametros.")
+                       f"Nenhuma espessura entre {c.H_MIN_CM:.0f} e {c.H_MAX_CM:.0f} cm (intervalo das tabelas do IPR-714) atendeu aos critérios "
+                       "(ΣCF e ΣCE ≤ 100%). Reveja os parâmetros.")
     else:
         pdf.set_fill_color(*_CINZA_CLARO)
         pdf._sf("B", 13)
         pdf.set_text_color(*_CINZA_ESCURO)
-        pdf.cell(0, 9, f"  Espessura adotada:  h = {resultado.h_cm:.1f} cm",
+        pdf.cell(0, 9, f"  Espessura adotada:  h = {resultado.h_cm:.0f} cm",
                  ln=True, fill=True)
         pdf.set_text_color(*_PRETO)
         pdf._sf("", 9)
         pdf.ln(1)
         pdf.linha_2col(
-            "Consumo de fadiga (S CF):", f"{_v(resultado.soma_fadiga_pct, 1)} %",
-            "Consumo de erosao (S CE):", f"{_v(resultado.soma_erosao_pct, 1)} %")
+            "Consumo de fadiga (ΣCF):", f"{_v(resultado.soma_fadiga_pct, 1)} %",
+            "Consumo de erosão (ΣCE):", f"{_v(resultado.soma_erosao_pct, 1)} %")
         ok = resultado.soma_fadiga_pct <= 100 and resultado.soma_erosao_pct <= 100
         pdf._sf("I", 8)
         pdf.set_text_color(0, 100, 0)
-        status = "aprovada [OK]" if ok else "reprovada [FALHA]"
+        status = "aprovada" if ok else "reprovada"
         pdf.cell(0, 5,
-                 f"  Ambos os criterios {'<=' if ok else '>'} 100%  -->  espessura {status}",
+                 f"  Ambos os critérios {'≤' if ok else '>'} 100%: espessura {status}",
                  ln=True)
         pdf.set_text_color(*_PRETO)
 
@@ -334,23 +350,28 @@ def gerar_pdf(
         _tabela_faixas(pdf, resultado)
 
         # -- 6. Grafico --
-        pdf.titulo_secao("6. Grafico h x Consumo")
+        pdf.titulo_secao("6. Gráfico Espessura × Consumo")
         try:
             img_bytes = _grafico_curva(curva, resultado.h_cm)
             pdf.image(io.BytesIO(img_bytes), x=18, w=170)
         except Exception:
             pdf._sf("I", 8)
-            pdf.cell(0, 5, "(Grafico indisponivel)", ln=True)
+            pdf.cell(0, 5, "(Gráfico indisponível)", ln=True)
 
     # -- 7. Recomendacao de Sub-base --
     if ctx.subbase_recomendada:
-        pdf.titulo_secao("7. Recomendacao de Sub-base")
+        pdf.titulo_secao("7. Sugestão de Sub-base")
         pdf._sf("B", 9)
-        pdf.cell(0, 5.5, f"Sub-base recomendada: {ctx.subbase_recomendada}", ln=True)
+        pdf.cell(0, 5.5, f"Sub-base sugerida pela ferramenta: {ctx.subbase_recomendada}", ln=True)
+        if ctx.tipo_subbase:
+            pdf._sf("", 9)
+            pdf.cell(0, 5.5, f"Sub-base adotada no projeto: {ctx.tipo_subbase}", ln=True)
         if ctx.subbase_justificativa:
             pdf._sf("", 8)
             pdf.set_text_color(80, 80, 80)
-            pdf.multi_cell(0, 4.5, ctx.subbase_justificativa)
+            pdf.multi_cell(0, 4.5, ctx.subbase_justificativa + " A sugestão considera apenas o "
+                           "nível de tráfego e a qualidade do subleito; a escolha final "
+                           "é do projetista.")
             pdf.set_text_color(*_PRETO)
 
     # -- 8. Custo de ciclo de vida (opcional) --
@@ -389,12 +410,12 @@ def gerar_pdf(
             pdf.image(io.BytesIO(_grafico_lcca(r)), x=18, w=170)
         except Exception:
             pdf._sf("I", 8)
-            pdf.cell(0, 5, "(Grafico indisponivel)", ln=True)
+            pdf.cell(0, 5, "(Gráfico indisponível)", ln=True)
 
         # decomposicao do CAPEX (fonte SICRO por componente)
         pdf.ln(1)
         pdf._sf("B", 9)
-        pdf.cell(0, 5.5, "Decomposicao do custo de construcao (SICRO RJ jan/2026):", ln=True)
+        pdf.cell(0, 5.5, "Decomposição do custo de construção (SICRO RJ jan/2026):", ln=True)
         pdf._sf("", 8)
         pdf.set_text_color(70, 70, 70)
         for alt in (r.rigido, r.flexivel):
@@ -412,24 +433,28 @@ def gerar_pdf(
         n_sec = 9
 
     # -- Notas metodologicas --
-    pdf.titulo_secao(f"{n_sec}. Notas Metodologicas e Limitacoes")
+    pdf.titulo_secao(f"{n_sec}. Notas Metodológicas e Limitações")
     notas = [
-        "Motor validado E2E contra o Quadro 11 do IPR-714: fadiga 8,6% (manual 8,9%) "
-        "e erosao 89,8% (manual 89,9%).",
-        "Equacao de erosao reconstruida empiricamente (o manual so traz o abaco, Fig. 28/29). "
-        "Erro medio 3,2% vs. exemplo do manual; C1 com acostamento = 0,90 (provisorio).",
-        "Solo do subleito estimado por pedologia EMBRAPA (SiBCS, RJ). Conversao "
-        "textura->AASHTO->CBR e estimativa -- confirmar com ensaio CBR in situ.",
-        "Custo SICRO: RJ, janeiro/2026 (codigo de servico DNIT). Custo por UF, "
-        "nao por municipio.",
-        "VMDa: PNCT/DNIT, ano-base 2022 (modelado). Composicao por perfil-tipo "
-        "(IPR-723, Fig. 13).",
+        "Motor de cálculo verificado contra o exemplo resolvido do IPR-714 (Quadros 11 e 24): "
+        "espessura adotada (26 cm) e critério governante (erosão) iguais aos do manual; "
+        "número admissível de repetições por fadiga com diferença de até 3,5%.",
+        "Erosão: leitura direta das Figuras 28 e 29 do IPR-714, digitalizadas. A Figura 28 "
+        "(sem acostamento) foi aferida contra as 34 leituras publicadas no manual, com erro "
+        "médio de 8,0%. A Figura 29 (com acostamento) não tem exemplo oficial e foi verificada "
+        "apenas de forma indireta; nesse caso os resultados tendem a ser conservadores.",
+        "fctk fixado em 4,8 MPa; FSC definido pelo volume de tráfego (Quadro 9 do IPR-714: "
+        "1,0 / 1,1 / 1,2). Espessura verificada em centímetros inteiros, de 12 a 34 cm, "
+        "intervalo coberto pelas tabelas do IPR-714 (sem extrapolação).",
+        "Solo do subleito estimado pelo mapeamento pedológico da Embrapa (SiBCS, RJ). A "
+        "conversão textura → AASHTO → CBR é estimativa: confirmar com ensaio de CBR no local.",
+        "VMDa: PNCT/DNIT, ano-base 2022 (modelado). Composição da frota por perfil-tipo e "
+        "eixos conforme o IPR-723 (Figura 13).",
     ]
     if lcca_res is not None:
         notas.append(
-            "LCCA: flexivel de REFERENCIA (nao dimensionado; espessura de CBUQ pela "
-            "tabela do IPR-719 + base granular 20 cm). Custos unitarios SICRO RJ "
-            "jan/2026; cronogramas de manutencao tipicos (editaveis). VPL por m2.")
+            "Custo de ciclo de vida: pavimento flexível de REFERÊNCIA (não dimensionado; "
+            "espessura de CBUQ pela tabela do IPR-719 + base granular de 20 cm). Custos "
+            "unitários SICRO RJ jan/2026; cronogramas de manutenção típicos. VPL por m².")
     pdf._sf("", 8)
     pdf.set_text_color(70, 70, 70)
     for i, nota in enumerate(notas, 1):
@@ -451,7 +476,7 @@ _EIXO_LABEL = {
 
 
 def _tabela_espectro(pdf: RelatorioPDF, espectro: list[c.FaixaCarga]):
-    colunas = ["Tipo de eixo", "Carga (tf)", "Repeticoes"]
+    colunas = ["Tipo de eixo", "Carga (tf)", "Repetições"]
     larguras = [55, 35, 55]
     _cabecalho_tabela(pdf, colunas, larguras)
     pdf._sf("", 8)
@@ -479,7 +504,7 @@ def _tabela_faixas(pdf: RelatorioPDF, resultado: c.ResultadoEspessura):
         pdf.set_fill_color(248, 248, 248)
         pdf.set_x(18)
         vals = [
-            _EIXO_LABEL.get(d.faixa.eixo, d.faixa.eixo.value)[:12],
+            _EIXO_LABEL.get(d.faixa.eixo, d.faixa.eixo.value),
             _v(d.faixa.carga_tf, 1),
             f"{d.faixa.repeticoes_previstas:,.0f}".replace(",", "."),
             _v(d.sr, 3),
@@ -496,7 +521,7 @@ def _tabela_faixas(pdf: RelatorioPDF, resultado: c.ResultadoEspessura):
     pdf.set_x(18)
     pdf.set_fill_color(*_CINZA_CLARO)
     total_w = sum(larguras[:5])
-    pdf.cell(total_w, 6, "Somatorio:", border="T", fill=True, align="R")
+    pdf.cell(total_w, 6, "Somatório:", border="T", fill=True, align="R")
     pdf.cell(larguras[5], 6, "", border="T", fill=True)
     pdf.cell(larguras[6], 6,
              f"Fad {_v(resultado.soma_fadiga_pct, 1)}% / Ero {_v(resultado.soma_erosao_pct, 1)}%",

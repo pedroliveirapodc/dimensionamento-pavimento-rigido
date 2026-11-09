@@ -36,7 +36,7 @@ def rodar(titulo: str, p: c.ParametrosProjeto, esperado: str = "") -> None:
 
     res = c.dimensionar(p)
     if res is None:
-        print(">>> Nenhuma espessura de 10 a 40 cm atendeu (ver diagnostico no app).")
+        print(f">>> Nenhuma espessura de {c.H_MIN_CM:.0f} a {c.H_MAX_CM:.0f} cm atendeu (ver diagnostico no app).")
         return
 
     print(f"\n>>> ESPESSURA ADOTADA: h = {res.h_cm:.1f} cm")

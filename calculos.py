@@ -27,9 +27,14 @@ import math
 # 1. CONSTANTES E CONFIGURACAO (centralizadas para facilitar ajustes)
 # =====================================================================
 
-# Faixa de espessuras testadas na iteracao (cm)
-H_MIN_CM = 10.0
-H_MAX_CM = 40.0
+# Faixa de espessuras testadas na iteracao (cm).
+# Restrita ao dominio dos Quadros 12 a 23 do IPR-714 (h = 12 a 34 cm,
+# tabelas_pca.H_LINHAS). Antes (ate 09/11/2026) era 10 a 40 cm, e fora de
+# 12-34 a consulta repetia o valor da borda da tabela (extrapolacao implicita).
+# Agora uma espessura necessaria acima de 34 cm e tratada como "sem solucao
+# no dominio do metodo" (diagnostico de falha na interface).
+H_MIN_CM = 12.0
+H_MAX_CM = 34.0
 # ENXUGAMENTO (23/08/2026, pedido da orientadora): espessura em numero INTEIRO
 # de cm (era passo 0,5). Historico do passo fino preservado no git (commit
 # "Corrige modelo de erosao..." e anteriores) caso precise retomar.
