@@ -21,8 +21,7 @@ Cobertura geográfica dos dados automáticos: **Estado do Rio de Janeiro** (solo
 ## 2. Como executar
 
 ```bash
-# interpretador usado no projeto (Windows):
-#   C:\Users\PEDRO\AppData\Local\Python\pythoncore-3.14-64\python.exe
+# Python 3.14 (Windows)
 python -m streamlit run app.py        # porta 8501
 ```
 
@@ -148,7 +147,7 @@ Tecnicamente, o motor (`calculos.py`) passou a **expor os intermediários** (ant
 **Geradores / dev (não‑runtime)**
 - `_gen_tabelas.py` (Quadros), `_gen_solos_display.py`, `_gen_postos.py`, `_gen_clima.py`, `_fit_erosao.py`, `validar_erosao.py`, `validar_e2e.py`.
 
-**Manual de referência:** `C:\Users\PEDRO\Downloads\714_manual_de_pavimentos_rigidos (1).pdf` (IPR‑714 completo) e `IPR‑723` (no zip do curso de Rodovias).
+**Manual de referência:** DNIT IPR‑714, Manual de Pavimentos Rígidos (2005), e DNIT IPR‑723, Manual de Estudos de Tráfego (2006), ambos de distribuição pública pelo DNIT.
 
 ---
 

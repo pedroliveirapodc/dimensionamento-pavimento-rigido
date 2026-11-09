@@ -2,7 +2,7 @@
 app_nicegui.py - Assistente de dimensionamento (versao NiceGUI - PLANO PRINCIPAL).
 
 Migracao a partir da versao Streamlit (app.py/telas.py/ui.py), que fica mantida
-como PLANO B (fallback) em C:\\Users\\PEDRO\\tcc_pavimentos. O backend de calculo
+como PLANO B (fallback) na mesma pasta. O backend de calculo
 (calculos.py, estagio3.py, tabelas_pca.py, lcca.py, sensibilidade.py,
 recomenda_subbase.py, resultados.py, dados _pnct/_solos/_mun/_clima/_sicro) e
 IDENTICO e reusado sem alteracao nas duas versoes.
@@ -110,5 +110,5 @@ def main_page():
         render_all()
 
 
-ui.run(port=8503, reload=False, show=False, title="Dimensionamento de Pavimentos Rígidos",
+ui.run(host="127.0.0.1", port=8503, reload=False, show=False, title="Dimensionamento de Pavimentos Rígidos",
       favicon="🛣️", storage_secret="tcc-pavimentos-dev")

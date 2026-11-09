@@ -1,6 +1,6 @@
 # Dimensionamento de Pavimentos Rígidos — DNIT IPR-714 / PCA 1984
 
-Ferramenta computacional (Python + Streamlit) para dimensionamento de placas de
+Ferramenta computacional (Python + NiceGUI) para dimensionamento de placas de
 pavimento rígido de concreto simples pelo **método PCA 1984** (critério duplo de
 fadiga e erosão), método preferencial do **Manual de Pavimentos Rígidos do DNIT
 (IPR-714)**. Desenvolvida como TCC — Engenharia Civil, UFRJ/POLI.

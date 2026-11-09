@@ -40,3 +40,10 @@ _fig*.png
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- Material de terceiros mantido só localmente ---
+# Slides de aula (uso restrito à disciplina) e manual IPR-723 com sua extração
+# de texto: material de consulta, não usado pelo app.
+_pnct/*.pptx
+_pnct/723_manual_estudos_trafego.pdf
+_pnct/manual723.txt
