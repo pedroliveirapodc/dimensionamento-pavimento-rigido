@@ -79,51 +79,53 @@ def k_de_cbr(cbr: float) -> float:
 # funcao de k0 do subleito e da espessura da sub-base. Aproximacoes das curvas.
 # Estrutura: {tipo: {"esp_cm": [...], "k0": [...], "kef": [[...]]}}  (kef[i_esp][j_k0])
 # ---------------------------------------------------------------
-# Eixo de k0 do subleito comum aos abacos (vao de 20 a 70 MPa/m).
-_K0 = [20, 40, 60, 70]
-
-# GRANULAR (Figura 18): kef lido do abaco p/ espessuras 10/15/20/30 cm.
+# REDIGITALIZACAO (09/11/2026). As tabelas abaixo foram obtidas por leitura
+# AUTOMATICA das curvas vermelhas das Figuras 18 a 21 (imagem embutida no PDF do
+# manual): cada curva e rastreada pixel a pixel e amostrada a cada 5 MPa/m de k0,
+# com os eixos calibrados pelos rotulos impressos. Substituem a leitura visual
+# anterior, que na Figura 19 superestimava kef em 20 a 45 MPa/m e na Figura 20
+# em ate 26 MPa/m (contra a seguranca). Alem do fim de uma curva no desenho,
+# repete-se o ultimo valor lido. Obs.: o manual reaproveita na Figura 21 as
+# curvas de 12,5 e 17,5 cm da Figura 20 (rotuladas 10 e 15 cm).
+# Scripts de leitura e de sobreposicao mantidos junto ao texto do TCC (Apendice A).
 _SB_GRANULAR = {
     "esp_cm": [10, 15, 20, 30],
-    "k0": _K0,
+    "k0": [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
     "kef": [
-        [22, 48, 66, 73],    # 10 cm
-        [28, 54, 71, 77],    # 15 cm
-        [32, 58, 78, 85],    # 20 cm
-        [43, 70, 92, 100],   # 30 cm
+        [23, 28, 34, 40, 45, 50, 56, 60, 65, 69, 73],   # 10 cm
+        [27, 33, 39, 45, 50, 56, 60, 65, 70, 74, 77],   # 15 cm
+        [32, 38, 44, 50, 55, 60, 66, 71, 76, 80, 85],   # 20 cm
+        [44, 51, 58, 64, 71, 76, 82, 87, 92, 96, 100],   # 30 cm
     ],
 }
-# BRITA TRATADA COM CIMENTO / BGTC (Figura 19): espessuras 10/12.5/15/20 cm.
 _SB_BGTC = {
     "esp_cm": [10, 12.5, 15, 20],
-    "k0": _K0,
+    "k0": [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85],
     "kef": [
-        [62, 100, 130, 140],
-        [68, 118, 160, 175],
-        [75, 130, 178, 195],
-        [85, 160, 220, 220],
+        [41, 50, 58, 66, 74, 82, 90, 98, 105, 112, 120, 127, 134, 138],   # 10 cm
+        [50, 60, 68, 77, 86, 95, 104, 112, 120, 129, 138, 146, 154, 160],   # 12.5 cm
+        [60, 70, 80, 90, 100, 110, 119, 129, 138, 147, 155, 164, 171, 177],   # 15 cm
+        [78, 91, 103, 116, 128, 140, 151, 163, 174, 185, 196, 206, 215, 220],   # 20 cm
     ],
 }
-# SOLO-CIMENTO (Figura 20): espessuras 10/12.5/15/17.5/20 cm.
 _SB_SOLO_CIMENTO = {
     "esp_cm": [10, 12.5, 15, 17.5, 20],
-    "k0": _K0,
+    "k0": [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
     "kef": [
-        [80, 110, 135, 145],
-        [90, 140, 190, 210],
-        [100, 170, 225, 240],
-        [115, 195, 240, 240],
-        [130, 215, 240, 240],
+        [67, 77, 87, 97, 106, 114, 122, 130, 138, 141, 141],   # 10 cm
+        [77, 90, 102, 113, 124, 135, 145, 155, 164, 168, 168],   # 12.5 cm
+        [101, 116, 130, 143, 156, 169, 181, 193, 205, 210, 210],   # 15 cm
+        [115, 132, 147, 162, 176, 189, 202, 214, 225, 230, 230],   # 17.5 cm
+        [125, 145, 164, 184, 202, 220, 236, 236, 236, 236, 236],   # 20 cm
     ],
 }
-# CONCRETO ROLADO / CCR (Figura 21): espessuras 10/12.5/15 cm.
 _SB_CCR = {
     "esp_cm": [10, 12.5, 15],
-    "k0": _K0,
+    "k0": [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
     "kef": [
-        [75, 120, 155, 165],
-        [82, 150, 190, 190],
-        [90, 175, 230, 240],
+        [77, 90, 102, 113, 124, 135, 145, 155, 164, 168, 168],   # 10 cm
+        [94, 108, 120, 132, 143, 154, 165, 175, 185, 190, 190],   # 12.5 cm
+        [115, 132, 147, 162, 176, 189, 202, 214, 225, 230, 230],   # 15 cm
     ],
 }
 
@@ -152,6 +154,7 @@ def k_efetivo(k0: float, tipo_subbase: str, espessura_cm: float = 0.0) -> float:
     if tab is None:
         return min(k0, K_MAX_TOPO_SUBBASE)
     kef = _interp_bilinear(tab, k0, espessura_cm)
+    kef = max(kef, k0)   # a sub-base nao reduz o suporte (k0 alem da escala do abaco)
     return min(kef, K_MAX_TOPO_SUBBASE)
 
 
