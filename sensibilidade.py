@@ -52,7 +52,7 @@ def _h_de(p: c.ParametrosProjeto) -> tuple[float, bool]:
 
 def _com_k(p: c.ParametrosProjeto, fator: float) -> c.ParametrosProjeto:
     q = copy.deepcopy(p)
-    q.k_mpa_m = min(p.k_mpa_m * fator, K_MAX_TOPO_SUBBASE)
+    q.k_mpa_m = max(min(p.k_mpa_m * fator, K_MAX_TOPO_SUBBASE), c.K_MIN_QUADROS)
     return q
 
 

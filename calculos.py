@@ -46,6 +46,11 @@ CONSUMO_MAXIMO = 100.0
 # "Infinito" pratico para repeticoes admissiveis ilimitadas (fadiga, SR baixo)
 N_ILIMITADO = 1e20
 
+# Dominio de k dos Quadros 12-23 (MPa/m). Abaixo de 20 a interpolacao saturaria
+# no valor de k=20, o que equivaleria a admitir um suporte MELHOR que o real
+# (contra a seguranca). A ferramenta recusa k < 20 (parecer de 09/11/2026).
+K_MIN_QUADROS = 20.0
+
 # Corte de "ilimitado" na leitura da Figura 28 (09/11/2026).
 # O manual (Quadros 11 e 24, exemplo da PCA) e a planilha de calculo de um
 # professor da disciplina tratam como ILIMITADAS as faixas de eixo simples de
@@ -232,13 +237,14 @@ def repeticoes_admissiveis_fadiga(tensao_eq: float, mr: float,
     escala com a carga elevada ao expoente 0,94 (IPR-714):
         SR = (tensao_eq / MR) * (carga / carga_padrao)^0.94
 
-    Equacoes da PCA 1984 (reproduzem o abaco de fadiga, Figura 27):
-      SR < 0.45            -> repeticoes ilimitadas
-      0.45 <= SR < 0.55    -> N = (4.2577 / (SR - 0.4325))^3.268
+    Equacoes da PCA 1984 (reproduzem o abaco de fadiga, Figura 27), na forma
+    fechada de Lee e Carpenter (2001, eq. 2, p. 295):
+      SR <= 0.45           -> repeticoes ilimitadas
+      0.45 < SR < 0.55     -> N = (4.2577 / (SR - 0.4325))^3.268
       SR >= 0.55           -> log10(N) = 11.737 - 12.077 * SR
     """
     sr = (tensao_eq / mr) * (carga_tf / carga_padrao_tf) ** EXP_CARGA_FADIGA
-    if sr < 0.45:
+    if sr <= 0.45:
         return N_ILIMITADO
     if sr < 0.55:
         return (4.2577 / (sr - 0.4325)) ** 3.268
@@ -307,8 +313,12 @@ def _ler_nomograma(carga_equiv_tf: float, fator_eros: float,
                     acostamento: TipoAcostamento) -> float:
     """Le N admissivel na Figura 28/29 digitalizada (ver nota acima)."""
     p = _NOMO[acostamento]
-    carga_equiv_tf = min(max(carga_equiv_tf, p["carga_min"]), p["carga_max"])
-    ef = min(max(fator_eros, p["ef_min"]), p["ef_max"])
+    # Abaixo da escala (carga < 4 tf ou EF < minimo) satura no extremo, o que
+    # SUPERESTIMA o dano (lado seguro). Acima da escala (carga > 26 tf ou EF >
+    # maximo) a reta e PROLONGADA em vez de truncada: truncar reduziria o dano.
+    # Esses casos sao sinalizados em verificar_espessura() (lista `avisos`).
+    carga_equiv_tf = max(carga_equiv_tf, p["carga_min"])
+    ef = max(fator_eros, p["ef_min"])
     p1 = p["a1"] + p["b1"] * math.log(carga_equiv_tf)
     p2 = p["a2"] + p["b2"] * ef
     p3 = p1 + (p2 - p1) * p["w"] + p["offset"]
@@ -401,6 +411,7 @@ class ResultadoEspessura:
     soma_erosao_pct: float
     aprovada: bool
     detalhes: list[ResultadoConsumo]
+    avisos: list[str] = field(default_factory=list)
 
 
 # =====================================================================
@@ -420,8 +431,13 @@ def _carga_efetiva(faixa: FaixaCarga, fsc: float) -> float:
 
 def verificar_espessura(h_cm: float, p: ParametrosProjeto) -> ResultadoEspessura:
     """Aplica o roteiro PCA 1984 a uma espessura-tentativa h."""
+    if p.k_mpa_m < K_MIN_QUADROS - 1e-9:
+        raise ValueError(
+            f"k = {p.k_mpa_m:.0f} MPa/m abaixo do dominio dos Quadros 12-23 "
+            f"(k >= {K_MIN_QUADROS:.0f} MPa/m). Use sub-base ou reveja o suporte.")
     mr = p.fctk_mpa   # PCA usa a resistencia a tracao na flexao diretamente
     detalhes: list[ResultadoConsumo] = []
+    avisos: list[str] = []
     soma_fadiga = 0.0
     soma_erosao = 0.0
 
@@ -442,6 +458,13 @@ def verificar_espessura(h_cm: float, p: ParametrosProjeto) -> ResultadoEspessura
         n_adm_erosao = repeticoes_admissiveis_erosao(
             fe, carga_ef, p.acostamento, faixa.eixo)
         consumo_e = 100.0 * faixa.repeticoes_previstas / n_adm_erosao
+        nomo = _NOMO[p.acostamento]
+        carga_eq = carga_ef / _CARGA_DIVISOR_EROSAO[faixa.eixo]
+        if carga_eq > nomo["carga_max"] or fe > nomo["ef_max"]:
+            avisos.append(
+                f"Eixo {faixa.eixo.value.replace('_', ' ')} de {faixa.carga_tf:g} tf: fora da escala impressa "
+                f"do nomograma de erosao (carga equivalente {carga_eq:.1f} tf, "
+                f"FE {fe:.2f}); N lido por prolongamento da reta.")
 
         soma_fadiga += consumo_f
         soma_erosao += consumo_e
@@ -452,7 +475,8 @@ def verificar_espessura(h_cm: float, p: ParametrosProjeto) -> ResultadoEspessura
             n_adm_erosao=n_adm_erosao))
 
     aprovada = (soma_fadiga <= CONSUMO_MAXIMO) and (soma_erosao <= CONSUMO_MAXIMO)
-    return ResultadoEspessura(h_cm, soma_fadiga, soma_erosao, aprovada, detalhes)
+    return ResultadoEspessura(h_cm, soma_fadiga, soma_erosao, aprovada, detalhes,
+                              avisos)
 
 
 # =====================================================================

@@ -24,11 +24,12 @@ quadros no texto do metodo (IPR-714, 4.6.2), e a usada nos nomes abaixo:
 (JSP/JCP = junta sem/com barras de transferencia; PSAC/PCAC = sem/com
 acostamento de concreto). Com barras o fator de erosao e sempre menor.
 
-Celulas corrigidas por erro de OCR (CONFERIR no PDF, p.101-104):
+Celulas corrigidas (conferidas na imagem da p.101 em 09/11/2026: o valor
+errado esta IMPRESSO no manual, com algarismos trocados; nao e erro de OCR):
   - Q12 h=13 k=20 ETD: OCR "2,33" -> corrigido 3,33 (monotonicidade)
   - Q12 h=15 k=40 ES : OCR "2,27" -> corrigido 2,77 (monotonicidade)
   - Q12 h=27 k=20 ES : OCR "1,83" -> corrigido 1,38 (monotonicidade)
-A coluna inteira k=40 do Q12 saiu interligada na extracao -> revisar visualmente.
+A coluna k=40 do Q12 foi conferida contra a imagem.
 """
 
 from __future__ import annotations
@@ -103,10 +104,15 @@ Q13_ETT_PSAC = {
 # =====================================================================
 # QUADRO 15 - Tensao Equivalente ETT - PCAC (com acostamento)
 # Cada celula = sigma_ETT. Colunas na ordem de K_ETT [20,40,60,80,140,180].
-# CORRECAO: coluna k=140 de h17-21 vinha com OCR inconsistente (h16=h17=1,15
-# duplicado, e valores > k=80, violando monotonicidade). Corrigidos por
-# interpolacao entre k=80 e k=180 (confiaveis): k140 ~ k80 + 0.6*(k180-k80).
-# Originais (OCR): h17=1.15 h18=1.04 h19=0.96 h20=0.88 h21=0.82. CONFERIR p.104.
+# ERRATA DO MANUAL (conferida na imagem da p.104 em 09/11/2026): a coluna
+# k=140 esta IMPRESSA deslocada uma linha a partir de h=17 -- h17 repete o
+# valor de h16 (1,15) e cada linha seguinte traz o valor que pertence a linha
+# de cima (h18 impresso = 1,04 = valor correto de h17, ...). O valor de h34 se
+# perde. Correcao adotada: k140(h) = impresso(h+1) para h=17..33. Teste: a
+# posicao relativa de k140 entre k80 e k180, (k80-k140)/(k80-k180), vale 0,7
+# a 1,0 nas linhas confiaveis (h12-16); com o deslocamento as linhas h17-33
+# ficam todas entre 0,71 e 1,0, sem ele oscilam entre 0 e 0,8. h34 pela
+# tendencia das vizinhas (posicao 1,0 em h32-33): 0,38. Mantem monotonicidade.
 # =====================================================================
 Q15_ETT_PCAC = {
     12: [2.60, 2.00, 1.93, 1.89, 1.85, 1.85],
@@ -114,24 +120,24 @@ Q15_ETT_PCAC = {
     14: [1.78, 1.59, 1.52, 1.48, 1.43, 1.42],
     15: [1.62, 1.44, 1.37, 1.30, 1.27, 1.26],
     16: [1.49, 1.32, 1.24, 1.20, 1.15, 1.13],
-    17: [1.38, 1.21, 1.14, 1.10, 1.06, 1.03],  # k140 corrigido 1.15->1.06 (interp)
-    18: [1.28, 1.12, 1.05, 1.01, 0.97, 0.94],  # k140 corrigido 1.04->0.97 (interp)
-    19: [1.19, 1.04, 0.98, 0.94, 0.89, 0.86],  # k140 corrigido 0.96->0.89 (interp)
-    20: [1.12, 0.98, 0.91, 0.87, 0.83, 0.80],  # k140 corrigido 0.88->0.83 (interp)
-    21: [1.05, 0.92, 0.85, 0.81, 0.77, 0.74],  # k140 corrigido 0.82->0.77 (interp)
-    22: [0.99, 0.86, 0.80, 0.76, 0.76, 0.69],
-    23: [0.93, 0.81, 0.76, 0.72, 0.71, 0.65],
-    24: [0.88, 0.77, 0.71, 0.68, 0.67, 0.61],
-    25: [0.84, 0.73, 0.68, 0.64, 0.63, 0.57],
-    26: [0.79, 0.70, 0.64, 0.61, 0.59, 0.54],
-    27: [0.75, 0.66, 0.61, 0.58, 0.56, 0.52],
-    28: [0.72, 0.63, 0.59, 0.56, 0.53, 0.49],
-    29: [0.68, 0.60, 0.56, 0.53, 0.51, 0.47],
-    30: [0.65, 0.58, 0.54, 0.51, 0.49, 0.45],
-    31: [0.62, 0.55, 0.51, 0.49, 0.46, 0.43],
-    32: [0.59, 0.53, 0.49, 0.47, 0.44, 0.41],
-    33: [0.57, 0.51, 0.47, 0.45, 0.41, 0.39],
-    34: [0.54, 0.49, 0.46, 0.43, 0.39, 0.38],
+    17: [1.38, 1.21, 1.14, 1.10, 1.04, 1.03],  # k140 = impresso de h=18 (errata)
+    18: [1.28, 1.12, 1.05, 1.01, 0.96, 0.94],  # k140 = impresso de h=19 (errata)
+    19: [1.19, 1.04, 0.98, 0.94, 0.88, 0.86],  # k140 = impresso de h=20 (errata)
+    20: [1.12, 0.98, 0.91, 0.87, 0.82, 0.80],  # k140 = impresso de h=21 (errata)
+    21: [1.05, 0.92, 0.85, 0.81, 0.76, 0.74],  # k140 = impresso de h=22 (errata)
+    22: [0.99, 0.86, 0.80, 0.76, 0.71, 0.69],  # k140 = impresso de h=23 (errata)
+    23: [0.93, 0.81, 0.76, 0.72, 0.67, 0.65],  # k140 = impresso de h=24 (errata)
+    24: [0.88, 0.77, 0.71, 0.68, 0.63, 0.61],  # k140 = impresso de h=25 (errata)
+    25: [0.84, 0.73, 0.68, 0.64, 0.59, 0.57],  # k140 = impresso de h=26 (errata)
+    26: [0.79, 0.70, 0.64, 0.61, 0.56, 0.54],  # k140 = impresso de h=27 (errata)
+    27: [0.75, 0.66, 0.61, 0.58, 0.53, 0.52],  # k140 = impresso de h=28 (errata)
+    28: [0.72, 0.63, 0.59, 0.56, 0.51, 0.49],  # k140 = impresso de h=29 (errata)
+    29: [0.68, 0.60, 0.56, 0.53, 0.49, 0.47],  # k140 = impresso de h=30 (errata)
+    30: [0.65, 0.58, 0.54, 0.51, 0.46, 0.45],  # k140 = impresso de h=31 (errata)
+    31: [0.62, 0.55, 0.51, 0.49, 0.44, 0.43],  # k140 = impresso de h=32 (errata)
+    32: [0.59, 0.53, 0.49, 0.47, 0.41, 0.41],  # k140 = impresso de h=33 (errata)
+    33: [0.57, 0.51, 0.47, 0.45, 0.39, 0.39],  # k140 = impresso de h=34 (errata)
+    34: [0.54, 0.49, 0.46, 0.43, 0.38, 0.38],  # k140 pela tendencia (valor perdido na impressao)
 }
 
 

@@ -415,7 +415,7 @@ def render_local_manual(s: dict, refresh) -> bool:
                 if metodo.value == "Pelo CBR":
                     cbr_in = ui.number(
                         "CBR do subleito (%)", value=float(s.get("cbr_val") or 5.0),
-                        min=1.0, max=100.0, step=0.5,
+                        min=2.0, max=100.0, step=0.5,
                     ).props("outlined dense").classes("w-64")
                     ui.label("Típico: argilas 2–8%, siltes 4–10%, solos granulares 10–30%. "
                              "Convertido em k0 pela Figura 11 do IPR-714.") \
@@ -445,7 +445,7 @@ def render_local_manual(s: dict, refresh) -> bool:
                 else:
                     k0_in = ui.number(
                         "k0 do subleito (MPa/m)", value=float(s.get("k0") or 50.0),
-                        min=10.0, max=150.0, step=5.0,
+                        min=20.0, max=150.0, step=5.0,
                     ).props("outlined dense").classes("w-64")
 
                     def _upd_k0(e):
@@ -1164,6 +1164,8 @@ def render_memoria(s: dict, refresh) -> bool:
         ba = s.get("barras", "Sem")
         ui.label(f"Premissas: fctk = {_v(p.fctk_mpa, 1)} MPa · k = {p.k_mpa_m:.0f} MPa/m · "
                  f"FSC = {_v(p.fsc)} · acostamento {ac} · barras {ba}.").classes("text-sm")
+        for aviso in getattr(res, "avisos", []):
+            ui.label("⚠️ " + aviso).classes("text-xs text-amber-700")
 
         # --- 0. Fundacao: de onde vem o k do sistema ---
         if s.get("k0"):

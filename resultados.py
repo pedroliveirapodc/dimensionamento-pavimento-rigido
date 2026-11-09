@@ -439,14 +439,16 @@ def gerar_pdf(
         "espessura adotada (26 cm) e critério governante (erosão) iguais aos do manual; "
         "número admissível de repetições por fadiga com diferença de até 3,5%.",
         "Erosão: leitura direta das Figuras 28 e 29 do IPR-714, digitalizadas. A Figura 28 "
-        "(sem acostamento) foi aferida contra as 34 leituras publicadas no manual, com erro "
-        "médio de 8,0%. A Figura 29 (com acostamento) não tem exemplo oficial e foi verificada "
-        "apenas de forma indireta; nesse caso os resultados tendem a ser conservadores.",
-        "fctk fixado em 4,8 MPa; FSC definido pelo volume de tráfego (Quadro 9 do IPR-714: "
-        "1,0 / 1,1 / 1,2). Espessura verificada em centímetros inteiros, de 12 a 34 cm, "
-        "intervalo coberto pelas tabelas do IPR-714 (sem extrapolação).",
+        "(sem acostamento) tem erro médio de 8,0% nas 34 leituras publicadas no manual, que "
+        "também serviram ao seu ajuste. A Figura 29 (com acostamento) não tem exemplo oficial "
+        "e foi verificada apenas de forma indireta; a precisão nesse caso não foi quantificada.",
+        "fctk fixado em 4,8 MPa. FSC por regra do autor a partir das repetições de eixos "
+        "pesados (1,0 abaixo de 5×10^5; 1,1 até 5×10^6; 1,2 acima), associada às categorias "
+        "qualitativas do Quadro 9 do IPR-714. Espessura verificada em centímetros inteiros, "
+        "de 12 a 34 cm, intervalo coberto pelas tabelas do IPR-714 (sem extrapolação).",
         "Solo do subleito estimado pelo mapeamento pedológico da Embrapa (SiBCS, RJ). A "
-        "conversão textura → AASHTO → CBR é estimativa: confirmar com ensaio de CBR no local.",
+        "conversão textura → AASHTO → CBR → k0 é regra do autor (hipótese de anteprojeto): "
+        "confirmar com ensaio de CBR no local.",
         "VMDa: PNCT/DNIT, ano-base 2022 (modelado). Composição da frota por perfil-tipo e "
         "eixos conforme o IPR-723 (Figura 13).",
     ]
