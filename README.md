@@ -89,4 +89,3 @@ em runtime: todo dado externo é empacotado offline.
 - Cobertura automática dos dados (solo/tráfego/custo): RJ. Fora do RJ, entrada manual.
 
 Documentação completa (método, fórmulas, decisões de projeto): [`DOCUMENTACAO.md`](DOCUMENTACAO.md).
-Plano de evolução: [`ROADMAP.md`](ROADMAP.md).

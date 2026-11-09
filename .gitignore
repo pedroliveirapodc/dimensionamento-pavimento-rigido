@@ -47,3 +47,8 @@ Thumbs.db
 _pnct/*.pptx
 _pnct/723_manual_estudos_trafego.pdf
 _pnct/manual723.txt
+
+# --- Notas internas de desenvolvimento (mantidas só localmente) ---
+ROADMAP.md
+PLANO_UX.md
+APRESENTACAO_METODO.md
